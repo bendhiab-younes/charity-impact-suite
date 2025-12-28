@@ -11,6 +11,8 @@ import BeneficiariesPage from "./pages/Beneficiaries";
 import RulesPage from "./pages/Rules";
 import AssociationsPage from "./pages/Associations";
 import AssociationDetailPage from "./pages/AssociationDetail";
+import HowItWorksPage from "./pages/HowItWorks";
+import ImpactPage from "./pages/Impact";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/associations" element={<AssociationsPage />} />
           <Route path="/associations/:id" element={<AssociationDetailPage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/impact" element={<ImpactPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/dashboard/donations" element={<DonationsPage />} />
           <Route path="/dashboard/beneficiaries" element={<BeneficiariesPage />} />
