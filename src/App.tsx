@@ -13,6 +13,13 @@ import AssociationsPage from "./pages/Associations";
 import AssociationDetailPage from "./pages/AssociationDetail";
 import HowItWorksPage from "./pages/HowItWorks";
 import ImpactPage from "./pages/Impact";
+import AssociationsManagement from "./pages/dashboard/AssociationsManagement";
+import UsersManagement from "./pages/dashboard/UsersManagement";
+import FamiliesManagement from "./pages/dashboard/FamiliesManagement";
+import Reports from "./pages/dashboard/Reports";
+import AuditLog from "./pages/dashboard/AuditLog";
+import Settings from "./pages/dashboard/Settings";
+import NewDonation from "./pages/dashboard/NewDonation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,9 +38,16 @@ const App = () => (
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/impact" element={<ImpactPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/dashboard/donations" element={<DonationsPage />} />
+          <Route path="/dashboard/associations" element={<AssociationsManagement />} />
+          <Route path="/dashboard/users" element={<UsersManagement />} />
           <Route path="/dashboard/beneficiaries" element={<BeneficiariesPage />} />
+          <Route path="/dashboard/families" element={<FamiliesManagement />} />
+          <Route path="/dashboard/donations" element={<DonationsPage />} />
+          <Route path="/dashboard/donations/new" element={<NewDonation />} />
           <Route path="/dashboard/rules" element={<RulesPage />} />
+          <Route path="/dashboard/reports" element={<Reports />} />
+          <Route path="/dashboard/audit" element={<AuditLog />} />
+          <Route path="/dashboard/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
