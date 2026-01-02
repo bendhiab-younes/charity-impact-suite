@@ -61,6 +61,10 @@ class ApiClient {
     return this.request<any>('/auth/me');
   }
 
+  async updateProfile(data: any) {
+    return this.request<any>('/auth/me', { method: 'PUT', body: data });
+  }
+
   logout() {
     localStorage.removeItem('auth_token');
   }
@@ -177,6 +181,14 @@ class ApiClient {
   async getUsers(associationId?: string) {
     const query = associationId ? `?associationId=${associationId}` : '';
     return this.request<any[]>(`/users${query}`);
+  }
+
+  async deleteUser(id: string) {
+    return this.request<any>(`/users/${id}`, { method: 'DELETE' });
+  }
+
+  async updateUser(id: string, data: any) {
+    return this.request<any>(`/users/${id}`, { method: 'PUT', body: data });
   }
 }
 

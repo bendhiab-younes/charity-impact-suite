@@ -3,15 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Plus, MoreHorizontal, Shield } from "lucide-react";
+import { useUsers } from "@/hooks/useUsers";
+import { Users, Plus, MoreHorizontal, Shield, Loader2 } from "lucide-react";
 
-const users = [
-  { id: "1", name: "Sarah Johnson", email: "sarah@example.com", role: "association_admin", status: "active", lastActive: "2 hours ago" },
-  { id: "2", name: "Michael Chen", email: "michael@example.com", role: "association_member", status: "active", lastActive: "1 day ago" },
-  { id: "3", name: "Emily Davis", email: "emily@example.com", role: "donor", status: "active", lastActive: "3 hours ago" },
-  { id: "4", name: "James Wilson", email: "james@example.com", role: "association_member", status: "inactive", lastActive: "2 weeks ago" },
-  { id: "5", name: "Maria Garcia", email: "maria@example.com", role: "association_admin", status: "active", lastActive: "5 mins ago" },
-];
 
 const roleLabels: Record<string, string> = {
   super_admin: "Super Admin",
@@ -21,9 +15,18 @@ const roleLabels: Record<string, string> = {
 };
 
 const UsersManagement = () => {
-  // TODO: Replace mock data with real API when /users endpoint is implemented
-  // const { users, isLoading } = useUsers();
-  
+  const { users, isLoading, stats } = useUsers();
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8 flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8">
@@ -41,25 +44,25 @@ const UsersManagement = () => {
         <div className="grid sm:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardContent className="pt-6">
-              <p className="text-2xl font-bold">48</p>
+              <p className="text-2xl font-bold">{stats.total}</p>
               <p className="text-sm text-muted-foreground">Total Users</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-2xl font-bold">5</p>
+              <p className="text-2xl font-bold">{stats.admins}</p>
               <p className="text-sm text-muted-foreground">Admins</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-2xl font-bold">18</p>
+              <p className="text-2xl font-bold">{stats.members}</p>
               <p className="text-sm text-muted-foreground">Members</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-2xl font-bold">25</p>
+              <p className="text-2xl font-bold">{stats.donors}</p>
               <p className="text-sm text-muted-foreground">Donors</p>
             </CardContent>
           </Card>
@@ -82,36 +85,46 @@ const UsersManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-                          {user.name.split(" ").map(n => n[0]).join("")}
+                {users.length > 0 ? (
+                  users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
+                            {user.name.split(" ").map(n => n[0]).join("")}
+                          </div>
+                          <span className="font-medium">{user.name}</span>
                         </div>
-                        <span className="font-medium">{user.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <Shield className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span>{roleLabels[user.role]}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.status === "active" ? "default" : "secondary"}>
-                        {user.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{user.lastActive}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>{roleLabels[user.role] || user.role}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="default">
+                          Active
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No users found
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </CardContent>

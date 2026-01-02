@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Settings as SettingsIcon, Bell, Shield, Globe, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
 
 const Settings = () => {
@@ -20,12 +21,23 @@ const Settings = () => {
   const [email, setEmail] = useState(user?.email || '');
 
   const handleSaveProfile = async () => {
-    setIsSaving(true);
-    // TODO: Implement profile update API endpoint
-    setTimeout(() => {
-      toast.success('Profile settings saved (demo)');
+    try {
+      setIsSaving(true);
+      const fullName = `${firstName} ${lastName}`.trim();
+      
+      await api.updateProfile({
+        name: fullName,
+        email: email,
+      });
+      
+      toast.success('Profile updated successfully');
+      // Optionally refresh user data
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update profile');
+    } finally {
       setIsSaving(false);
-    }, 500);
+    }
   };
 
   return (

@@ -1,8 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Heart, Shield, Users, BarChart3, ChevronRight } from 'lucide-react';
+import { Heart, Shield, Users, BarChart3, ChevronRight, LayoutDashboard, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Header() {
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -26,12 +33,31 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Button variant="ghost" asChild>
-            <Link to="/auth">Sign In</Link>
-          </Button>
-          <Button variant="hero" asChild>
-            <Link to="/auth?mode=signup">Get Started</Link>
-          </Button>
+          {isAuthenticated && user ? (
+            <>
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                {user.name}
+              </span>
+              <Button variant="outline" asChild>
+                <Link to="/dashboard">
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Link>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleLogout}>
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" asChild>
+                <Link to="/auth">Sign In</Link>
+              </Button>
+              <Button variant="hero" asChild>
+                <Link to="/auth?mode=signup">Get Started</Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>

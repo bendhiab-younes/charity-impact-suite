@@ -57,6 +57,14 @@ export class AuthService {
     return this.sanitizeUser(user);
   }
 
+  async updateProfile(userId: string, updateData: Partial<RegisterDto>) {
+    // Don't allow password updates through this endpoint
+    const { password, ...safeData } = updateData as any;
+    
+    const updatedUser = await this.usersService.update(userId, safeData);
+    return this.sanitizeUser(updatedUser);
+  }
+
   private generateToken(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role };
     return this.jwtService.sign(payload);
