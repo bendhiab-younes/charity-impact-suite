@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,11 +6,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Settings as SettingsIcon, Bell, Shield, Globe, Palette } from "lucide-react";
+import { Settings as SettingsIcon, Bell, Shield, Globe, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const Settings = () => {
+  const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const nameParts = user?.name?.split(' ') || ['', ''];
+  const [firstName, setFirstName] = useState(nameParts[0] || '');
+  const [lastName, setLastName] = useState(nameParts.slice(1).join(' ') || '');
+  const [email, setEmail] = useState(user?.email || '');
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    // TODO: Implement profile update API endpoint
+    setTimeout(() => {
+      toast.success('Profile settings saved (demo)');
+      setIsSaving(false);
+    }, 500);
+  };
+
   return (
-    <DashboardLayout userRole="association_admin">
+    <DashboardLayout>
       <div className="p-6 lg:p-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground">Settings</h1>
@@ -30,18 +50,38 @@ const Settings = () => {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" defaultValue="Michael" />
+                  <Input 
+                    id="firstName" 
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" defaultValue="Chen" />
+                  <Input 
+                    id="lastName" 
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue="michael@example.com" />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
-              <Button>Save Changes</Button>
+              <Button onClick={handleSaveProfile} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : 'Save Changes'}
+              </Button>
             </CardContent>
           </Card>
 

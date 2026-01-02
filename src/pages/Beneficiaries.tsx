@@ -6,14 +6,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockBeneficiaries } from '@/data/mockData';
-import { Plus, Search, Filter, Download, UserPlus } from 'lucide-react';
+import { useBeneficiaries } from '@/hooks/useBeneficiaries';
+import { AddBeneficiaryModal } from '@/components/modals/AddBeneficiaryModal';
+import { Plus, Search, Filter, Download, UserPlus, Loader2 } from 'lucide-react';
 
 export default function BeneficiariesPage() {
+  const { beneficiaries, isLoading, eligibleCount, pendingCount, refetch } = useBeneficiaries();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const eligibleCount = mockBeneficiaries.filter(b => b.status === 'eligible').length;
-  const pendingCount = mockBeneficiaries.filter(b => b.status === 'pending_review').length;
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8 flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -31,7 +41,7 @@ export default function BeneficiariesPage() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button variant="hero">
+            <Button variant="hero" onClick={() => setIsModalOpen(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
               Add Beneficiary
             </Button>
@@ -60,7 +70,7 @@ export default function BeneficiariesPage() {
           <TabsList>
             <TabsTrigger value="all">
               All
-              <Badge variant="muted" className="ml-2">{mockBeneficiaries.length}</Badge>
+              <Badge variant="muted" className="ml-2">{beneficiaries.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="eligible">
               Eligible
@@ -77,7 +87,7 @@ export default function BeneficiariesPage() {
           <TabsContent value="all">
             <Card>
               <CardContent className="p-0">
-                <BeneficiariesTable beneficiaries={mockBeneficiaries} />
+                <BeneficiariesTable beneficiaries={beneficiaries} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -86,7 +96,7 @@ export default function BeneficiariesPage() {
             <Card>
               <CardContent className="p-0">
                 <BeneficiariesTable 
-                  beneficiaries={mockBeneficiaries.filter(b => b.status === 'eligible')} 
+                  beneficiaries={beneficiaries.filter(b => b.status === 'ELIGIBLE')} 
                 />
               </CardContent>
             </Card>
@@ -96,13 +106,19 @@ export default function BeneficiariesPage() {
             <Card>
               <CardContent className="p-0">
                 <BeneficiariesTable 
-                  beneficiaries={mockBeneficiaries.filter(b => b.status === 'pending_review')} 
+                  beneficiaries={beneficiaries.filter(b => b.status === 'PENDING_REVIEW')} 
                 />
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      <AddBeneficiaryModal 
+        open={isModalOpen} 
+        onOpenChange={setIsModalOpen}
+        onSuccess={refetch}
+      />
     </DashboardLayout>
   );
 }

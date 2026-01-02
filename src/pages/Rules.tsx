@@ -2,24 +2,15 @@ import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { mockRules } from '@/data/mockData';
-import { Plus, Edit, Trash2, Clock, DollarSign, Users } from 'lucide-react';
-import { toast } from 'sonner';
-import { DonationRule } from '@/types';
+import { useRules } from '@/hooks/useRules';
+import { AddRuleModal } from '@/components/modals/AddRuleModal';
+import { Plus, Edit, Trash2, Clock, DollarSign, Users, Loader2 } from 'lucide-react';
 
 export default function RulesPage() {
-  const [rules, setRules] = useState<DonationRule[]>(mockRules);
-
-  const toggleRule = (id: string) => {
-    setRules(prev => 
-      prev.map(r => r.id === id ? { ...r, isActive: !r.isActive } : r)
-    );
-    const rule = rules.find(r => r.id === id);
-    toast.success(`Rule "${rule?.name}" ${rule?.isActive ? 'disabled' : 'enabled'}`);
-  };
+  const { rules, isLoading, toggleRule, refetch } = useRules();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const getRuleIcon = (type: string) => {
     switch (type) {
@@ -34,12 +25,22 @@ export default function RulesPage() {
     }
   };
 
-  const formatValue = (rule: DonationRule) => {
+  const formatValue = (rule: any) => {
     if (rule.unit === 'currency') {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(rule.value);
     }
-    return `${rule.value} ${rule.unit}`;
+    return `${rule.value} ${rule.unit || ''}`;
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8 flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -52,7 +53,7 @@ export default function RulesPage() {
               Configure eligibility constraints and donation limits
             </p>
           </div>
-          <Button variant="hero">
+          <Button variant="hero" onClick={() => setIsModalOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Create Rule
           </Button>
@@ -120,7 +121,10 @@ export default function RulesPage() {
           })}
 
           {/* Add New Rule Card */}
-          <Card className="border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer group">
+          <Card 
+            className="border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer group"
+            onClick={() => setIsModalOpen(true)}
+          >
             <CardContent className="flex flex-col items-center justify-center h-full min-h-[200px] text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted group-hover:bg-primary/10 transition-colors mb-3">
                 <Plus className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -133,6 +137,12 @@ export default function RulesPage() {
           </Card>
         </div>
       </div>
+
+      <AddRuleModal 
+        open={isModalOpen} 
+        onOpenChange={setIsModalOpen}
+        onSuccess={refetch}
+      />
     </DashboardLayout>
   );
 }

@@ -3,10 +3,13 @@ import { AssociationCard } from '@/components/associations/AssociationCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { mockAssociations } from '@/data/mockData';
-import { Search, Filter, MapPin } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAssociations } from '@/hooks/useAssociations';
+import { Search, Filter, MapPin, Loader2 } from 'lucide-react';
 
 export default function AssociationsPage() {
+  const { associations, isLoading } = useAssociations();
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -53,15 +56,27 @@ export default function AssociationsPage() {
           {/* Results */}
           <div className="mb-4">
             <p className="text-sm text-muted-foreground">
-              Showing {mockAssociations.length} associations
+              Showing {associations.length} associations
             </p>
           </div>
 
           {/* Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockAssociations.map((association) => (
-              <AssociationCard key={association.id} association={association} />
-            ))}
+            {isLoading ? (
+              <>
+                <Skeleton className="h-64 rounded-lg" />
+                <Skeleton className="h-64 rounded-lg" />
+                <Skeleton className="h-64 rounded-lg" />
+              </>
+            ) : associations.length > 0 ? (
+              associations.map((association) => (
+                <AssociationCard key={association.id} association={association} />
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-12 text-muted-foreground">
+                No associations found
+              </div>
+            )}
           </div>
         </div>
       </main>

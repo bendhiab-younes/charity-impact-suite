@@ -6,30 +6,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockDonations } from '@/data/mockData';
-import { Plus, Search, Filter, Download } from 'lucide-react';
-import { toast } from 'sonner';
+import { useDonations } from '@/hooks/useDonations';
+import { Plus, Search, Filter, Download, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function DonationsPage() {
-  const [donations, setDonations] = useState(mockDonations);
+  const { donations, isLoading, pendingCount, completedCount, approveDonation, rejectDonation } = useDonations();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleApprove = (id: string) => {
-    setDonations(prev => 
-      prev.map(d => d.id === id ? { ...d, status: 'completed' as const } : d)
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8 flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
     );
-    toast.success('Donation approved successfully');
-  };
-
-  const handleReject = (id: string) => {
-    setDonations(prev => 
-      prev.map(d => d.id === id ? { ...d, status: 'rejected' as const } : d)
-    );
-    toast.error('Donation rejected');
-  };
-
-  const pendingCount = donations.filter(d => d.status === 'pending').length;
-  const completedCount = donations.filter(d => d.status === 'completed').length;
+  }
 
   return (
     <DashboardLayout>
@@ -95,8 +88,8 @@ export default function DonationsPage() {
               <CardContent className="p-0">
                 <DonationsTable 
                   donations={donations}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
+                  onApprove={approveDonation}
+                  onReject={rejectDonation}
                 />
               </CardContent>
             </Card>
@@ -106,9 +99,9 @@ export default function DonationsPage() {
             <Card>
               <CardContent className="p-0">
                 <DonationsTable 
-                  donations={donations.filter(d => d.status === 'pending')}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
+                  donations={donations.filter(d => d.status === 'PENDING')}
+                  onApprove={approveDonation}
+                  onReject={rejectDonation}
                 />
               </CardContent>
             </Card>
@@ -118,7 +111,7 @@ export default function DonationsPage() {
             <Card>
               <CardContent className="p-0">
                 <DonationsTable 
-                  donations={donations.filter(d => d.status === 'completed')}
+                  donations={donations.filter(d => d.status === 'COMPLETED')}
                   showActions={false}
                 />
               </CardContent>

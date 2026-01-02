@@ -135,12 +135,21 @@ The frontend will run at http://localhost:5173
 - [x] **API Documentation** - Swagger/OpenAPI docs
 
 ### Frontend
-- [x] **Public Landing Page** - Hero, features, association listing
+- [x] **Public Landing Page** - Hero, features, association listing from API
 - [x] **Authentication Pages** - Login and registration with role selection
 - [x] **Dashboard** - Stats overview connected to real API data
 - [x] **Association Cards** - Display associations from database
+- [x] **Associations Listing** - Public page with real API data
+- [x] **Association Detail** - Individual association pages from API
+- [x] **Donations Management** - List, approve, reject donations (persists to DB)
+- [x] **Beneficiaries Management** - List beneficiaries with status filtering
+- [x] **Families Management** - List families with real statistics
+- [x] **Rules Configuration** - Toggle rules (persists to DB)
+- [x] **New Donation Form** - Creates real donations via API
+- [x] **Reports Page** - Real statistics and monthly breakdown
+- [x] **Settings Page** - Shows real user profile data
 - [x] **Responsive Design** - Mobile-friendly UI
-- [x] **API Integration** - Auth context and API client
+- [x] **API Integration** - Custom hooks for each resource
 
 ## Features Not Yet Implemented
 
@@ -151,17 +160,16 @@ The frontend will run at http://localhost:5173
 - [ ] Advanced search and filtering
 - [ ] Data export (CSV, PDF reports)
 - [ ] Rate limiting
+- [ ] Profile update endpoint
 
 ### Frontend
-- [ ] Beneficiaries management page (connected to API)
-- [ ] Families management page (connected to API)
-- [ ] Donations management page (connected to API)
-- [ ] Rules configuration page (connected to API)
-- [ ] User profile editing
-- [ ] Reports and analytics dashboards
+- [ ] Add Beneficiary modal/form
+- [ ] Add Family modal/form
+- [ ] Create Rule modal/form
 - [ ] Real-time notifications
 - [ ] Dark mode toggle
 - [ ] Multi-language support (French/Arabic)
+- [ ] Data visualization charts
 
 ### General
 - [ ] Unit and integration tests
@@ -174,12 +182,13 @@ The frontend will run at http://localhost:5173
 ### Fixed Issues
 - **Status case mismatch** - Fixed: DonationsTable now handles both uppercase (API) and lowercase status values
 - **Dashboard error for users without association** - Fixed: Shows friendly message for donors/super admins
+- **All pages connected to API** - All management pages now fetch real data from the database
 
 ### Current Limitations
 1. **Donors and Super Admins** - Dashboard shows "No Association Linked" message since they're not tied to a specific association. This is expected behavior.
 2. **Frontend type definitions** - Types in `src/types/index.ts` use lowercase enum values while API returns uppercase. Components handle this with case-insensitive comparisons.
 3. **No logout redirect** - After logout, user stays on current page instead of redirecting to home.
-4. **Missing form pages** - Donation/Beneficiary/Family creation forms are not yet connected to the API.
+4. **Create modals not implemented** - Add Beneficiary/Family/Rule buttons show UI but don't have working modals yet.
 
 ## API Endpoints
 

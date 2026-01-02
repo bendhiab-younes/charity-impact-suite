@@ -1,11 +1,12 @@
 import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Header, Footer } from '@/components/layout/PublicLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockAssociations, mockDonations } from '@/data/mockData';
+import { api } from '@/lib/api';
 import { 
   Building2, 
   MapPin, 
@@ -20,13 +21,59 @@ import {
   Heart,
   Calendar,
   ArrowLeft,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 
 export default function AssociationDetailPage() {
   const { id } = useParams();
-  const association = mockAssociations.find(a => a.id === id) || mockAssociations[0];
-  const recentDonations = mockDonations.filter(d => d.associationId === association.id).slice(0, 5);
+  const [association, setAssociation] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAssociation = async () => {
+      if (!id) return;
+      try {
+        const data = await api.getAssociation(id);
+        setAssociation(data);
+      } catch (err) {
+        console.error('Failed to load association', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadAssociation();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!association) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-2">Association Not Found</h1>
+            <p className="text-muted-foreground mb-4">The association you're looking for doesn't exist.</p>
+            <Button asChild>
+              <Link to="/associations">Browse Associations</Link>
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -272,7 +319,7 @@ export default function AssociationDetailPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {recentDonations.length > 0 ? recentDonations.map((donation) => (
+                      {(association.donations?.length > 0) ? association.donations.slice(0, 5).map((donation: any) => (
                         <div key={donation.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
                           <div className="flex items-center gap-3">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent">
