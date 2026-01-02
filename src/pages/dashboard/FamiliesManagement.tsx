@@ -4,13 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserCircle, Plus, MoreHorizontal, Users, Loader2 } from "lucide-react";
+import { UserCircle, Plus, MoreHorizontal, Users, Loader2, Download } from "lucide-react";
 import { useFamilies } from "@/hooks/useFamilies";
 import { AddFamilyModal } from "@/components/modals/AddFamilyModal";
+import { exportFamilies } from "@/lib/export";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const FamiliesManagement = () => {
   const { families, isLoading, eligibleCount, cooldownCount, totalMembers, refetch } = useFamilies();
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const userRole = user?.role?.toUpperCase();
+  const canEdit = userRole === 'ASSOCIATION_ADMIN' || userRole === 'SUPER_ADMIN';
 
   if (isLoading) {
     return (
@@ -30,10 +37,25 @@ const FamiliesManagement = () => {
             <h1 className="text-2xl font-bold text-foreground">Families</h1>
             <p className="text-muted-foreground">Manage beneficiary households and track donation eligibility</p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Register Family
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                exportFamilies(families);
+                toast.success('Families exported to CSV');
+              }}
+              disabled={families.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            {canEdit && (
+              <Button onClick={() => setIsModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Register Family
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="grid sm:grid-cols-4 gap-4 mb-8">

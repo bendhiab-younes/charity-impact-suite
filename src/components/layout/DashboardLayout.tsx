@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Heart, 
   LayoutDashboard, 
@@ -33,10 +34,10 @@ const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['super_admin', 'association_admin', 'association_member', 'donor'] },
   { label: 'Associations', href: '/dashboard/associations', icon: Building2, roles: ['super_admin'] },
   { label: 'Users', href: '/dashboard/users', icon: Users, roles: ['super_admin', 'association_admin'] },
-  { label: 'Beneficiaries', href: '/dashboard/beneficiaries', icon: HandHeart, roles: ['association_admin', 'association_member'] },
-  { label: 'Families', href: '/dashboard/families', icon: UserCircle, roles: ['association_admin', 'association_member'] },
-  { label: 'Donations', href: '/dashboard/donations', icon: Wallet, badge: '3', roles: ['super_admin', 'association_admin', 'association_member', 'donor'] },
-  { label: 'Rules', href: '/dashboard/rules', icon: ClipboardList, roles: ['association_admin'] },
+  { label: 'Beneficiaries', href: '/dashboard/beneficiaries', icon: HandHeart, roles: ['super_admin', 'association_admin', 'association_member'] },
+  { label: 'Families', href: '/dashboard/families', icon: UserCircle, roles: ['super_admin', 'association_admin', 'association_member'] },
+  { label: 'Donations', href: '/dashboard/donations', icon: Wallet, roles: ['super_admin', 'association_admin', 'association_member', 'donor'] },
+  { label: 'Rules', href: '/dashboard/rules', icon: ClipboardList, roles: ['super_admin', 'association_admin'] },
   { label: 'Reports', href: '/dashboard/reports', icon: BarChart3, roles: ['super_admin', 'association_admin'] },
   { label: 'Audit Log', href: '/dashboard/audit', icon: FileText, roles: ['super_admin', 'association_admin'] },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings, roles: ['super_admin', 'association_admin', 'association_member', 'donor'] },
@@ -44,22 +45,45 @@ const navItems: NavItem[] = [
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  userRole?: UserRole;
-  userName?: string;
 }
 
-export function DashboardLayout({ children, userRole = 'association_admin', userName = 'Michael Chen' }: DashboardLayoutProps) {
+const roleLabels: Record<string, string> = {
+  SUPER_ADMIN: 'Super Admin',
+  ASSOCIATION_ADMIN: 'Association Admin',
+  ASSOCIATION_MEMBER: 'Member',
+  DONOR: 'Donor',
+  super_admin: 'Super Admin',
+  association_admin: 'Association Admin',
+  association_member: 'Member',
+  donor: 'Donor',
+  public: 'Guest',
+};
+
+const roleBadgeColors: Record<string, string> = {
+  SUPER_ADMIN: 'bg-red-500/10 text-red-500 border-red-500/20',
+  ASSOCIATION_ADMIN: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  ASSOCIATION_MEMBER: 'bg-green-500/10 text-green-500 border-green-500/20',
+  DONOR: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+  super_admin: 'bg-red-500/10 text-red-500 border-red-500/20',
+  association_admin: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  association_member: 'bg-green-500/10 text-green-500 border-green-500/20',
+  donor: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+};
+
+export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  
+  const userRole = (user?.role?.toLowerCase() || 'donor') as UserRole;
+  const userName = user?.name || 'User';
   
   const filteredNavItems = navItems.filter(item => item.roles.includes(userRole));
-  
-  const roleLabels: Record<UserRole, string> = {
-    super_admin: 'Super Admin',
-    association_admin: 'Admin',
-    association_member: 'Member',
-    donor: 'Donor',
-    public: 'Guest',
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
   return (
@@ -133,29 +157,44 @@ export function DashboardLayout({ children, userRole = 'association_admin', user
         {/* User section */}
         <div className="border-t border-sidebar-border p-4">
           {!collapsed ? (
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-accent-foreground">
-                <span className="text-sm font-medium">{userName.split(' ').map(n => n[0]).join('')}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{userName}</p>
-                <div className="flex items-center gap-1">
-                  <Shield className="h-3 w-3 text-sidebar-primary" />
-                  <p className="text-xs text-sidebar-foreground/70">{roleLabels[userRole]}</p>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-accent-foreground">
+                  <span className="text-sm font-medium">{userName.split(' ').map(n => n[0]).join('')}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{userName}</p>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-[10px] px-1.5 py-0 h-4 font-medium border",
+                      roleBadgeColors[user?.role || userRole] || 'bg-gray-500/10 text-gray-500'
+                    )}
+                  >
+                    <Shield className="h-2.5 w-2.5 mr-1" />
+                    {roleLabels[user?.role || userRole] || 'User'}
+                  </Badge>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent" asChild>
-                <Link to="/">
-                  <LogOut className="h-4 w-4" />
-                </Link>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
               </Button>
             </div>
           ) : (
             <div className="flex justify-center">
-              <Button variant="ghost" size="icon" className="h-9 w-9 text-sidebar-foreground hover:bg-sidebar-accent" asChild>
-                <Link to="/">
-                  <LogOut className="h-4 w-4" />
-                </Link>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-9 w-9 text-sidebar-foreground hover:bg-sidebar-accent"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           )}

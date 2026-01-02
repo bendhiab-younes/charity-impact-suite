@@ -7,12 +7,25 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDonations } from '@/hooks/useDonations';
+import { exportDonations } from '@/lib/export';
+import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Search, Filter, Download, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export default function DonationsPage() {
   const { donations, isLoading, pendingCount, completedCount, approveDonation, rejectDonation } = useDonations();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+
+  const userRole = user?.role?.toUpperCase();
+  const canApprove = userRole === 'ASSOCIATION_ADMIN' || userRole === 'SUPER_ADMIN';
+  const isDonor = userRole === 'DONOR';
+  
+  // Filter donations for donors to only show their own
+  const filteredDonations = isDonor 
+    ? donations.filter(d => d.donorId === user?.id)
+    : donations;
 
   if (isLoading) {
     return (
@@ -36,14 +49,25 @@ export default function DonationsPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                exportDonations(filteredDonations);
+                toast.success('Donations exported to CSV');
+              }}
+              disabled={filteredDonations.length === 0}
+            >
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button variant="hero">
-              <Plus className="h-4 w-4 mr-2" />
-              Record Donation
-            </Button>
+            {canApprove && (
+              <Button variant="hero" asChild>
+                <Link to="/dashboard/donations/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Record Donation
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -69,7 +93,7 @@ export default function DonationsPage() {
           <TabsList>
             <TabsTrigger value="all">
               All
-              <Badge variant="muted" className="ml-2">{donations.length}</Badge>
+              <Badge variant="muted" className="ml-2">{filteredDonations.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="pending">
               Pending
@@ -87,9 +111,9 @@ export default function DonationsPage() {
             <Card>
               <CardContent className="p-0">
                 <DonationsTable 
-                  donations={donations}
-                  onApprove={approveDonation}
-                  onReject={rejectDonation}
+                  donations={filteredDonations}
+                  onApprove={canApprove ? approveDonation : undefined}
+                  onReject={canApprove ? rejectDonation : undefined}
                 />
               </CardContent>
             </Card>
@@ -99,9 +123,9 @@ export default function DonationsPage() {
             <Card>
               <CardContent className="p-0">
                 <DonationsTable 
-                  donations={donations.filter(d => d.status === 'PENDING')}
-                  onApprove={approveDonation}
-                  onReject={rejectDonation}
+                  donations={filteredDonations.filter(d => d.status === 'PENDING')}
+                  onApprove={canApprove ? approveDonation : undefined}
+                  onReject={canApprove ? rejectDonation : undefined}
                 />
               </CardContent>
             </Card>
@@ -111,7 +135,7 @@ export default function DonationsPage() {
             <Card>
               <CardContent className="p-0">
                 <DonationsTable 
-                  donations={donations.filter(d => d.status === 'COMPLETED')}
+                  donations={filteredDonations.filter(d => d.status === 'COMPLETED')}
                   showActions={false}
                 />
               </CardContent>

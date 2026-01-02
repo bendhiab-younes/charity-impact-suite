@@ -8,12 +8,19 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBeneficiaries } from '@/hooks/useBeneficiaries';
 import { AddBeneficiaryModal } from '@/components/modals/AddBeneficiaryModal';
+import { exportBeneficiaries } from '@/lib/export';
+import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Search, Filter, Download, UserPlus, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function BeneficiariesPage() {
   const { beneficiaries, isLoading, eligibleCount, pendingCount, refetch } = useBeneficiaries();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const userRole = user?.role?.toUpperCase();
+  const canEdit = userRole === 'ASSOCIATION_ADMIN' || userRole === 'SUPER_ADMIN';
 
   if (isLoading) {
     return (
@@ -37,14 +44,23 @@ export default function BeneficiariesPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                exportBeneficiaries(beneficiaries);
+                toast.success('Beneficiaries exported to CSV');
+              }}
+              disabled={beneficiaries.length === 0}
+            >
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button variant="hero" onClick={() => setIsModalOpen(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add Beneficiary
-            </Button>
+            {canEdit && (
+              <Button variant="hero" onClick={() => setIsModalOpen(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add Beneficiary
+              </Button>
+            )}
           </div>
         </div>
 

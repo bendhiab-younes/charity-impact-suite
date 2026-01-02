@@ -6,11 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useRules } from '@/hooks/useRules';
 import { AddRuleModal } from '@/components/modals/AddRuleModal';
+import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Edit, Trash2, Clock, DollarSign, Users, Loader2 } from 'lucide-react';
 
 export default function RulesPage() {
   const { rules, isLoading, toggleRule, refetch } = useRules();
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const userRole = user?.role?.toUpperCase();
+  const canEdit = userRole === 'ASSOCIATION_ADMIN' || userRole === 'SUPER_ADMIN';
 
   const getRuleIcon = (type: string) => {
     switch (type) {
@@ -90,9 +95,10 @@ export default function RulesPage() {
                         </Badge>
                       </div>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={rule.isActive}
                       onCheckedChange={() => toggleRule(rule.id)}
+                      disabled={!canEdit}
                     />
                   </div>
                 </CardHeader>
@@ -106,35 +112,39 @@ export default function RulesPage() {
                   </div>
                 </CardContent>
                 <CardFooter className="pt-3 border-t border-border">
-                  <div className="flex items-center gap-2 w-full">
-                    <Button variant="ghost" size="sm" className="flex-1">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {canEdit && (
+                    <div className="flex items-center gap-2 w-full">
+                      <Button variant="ghost" size="sm" className="flex-1">
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </CardFooter>
               </Card>
             );
           })}
 
           {/* Add New Rule Card */}
-          <Card 
-            className="border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer group"
-            onClick={() => setIsModalOpen(true)}
-          >
-            <CardContent className="flex flex-col items-center justify-center h-full min-h-[200px] text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted group-hover:bg-primary/10 transition-colors mb-3">
-                <Plus className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-              <p className="font-medium">Add New Rule</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Create a custom eligibility rule
-              </p>
-            </CardContent>
-          </Card>
+          {canEdit && (
+            <Card 
+              className="border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer group"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <CardContent className="flex flex-col items-center justify-center h-full min-h-[200px] text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted group-hover:bg-primary/10 transition-colors mb-3">
+                  <Plus className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+                <p className="font-medium">Add New Rule</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Create a custom eligibility rule
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

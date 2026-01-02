@@ -28,7 +28,26 @@ import {
 export default function AssociationDetailPage() {
   const { id } = useParams();
   const [association, setAssociation] = useState<any>(null);
+  const [donations, setDonations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Calculate stats from real data
+  const stats = {
+    totalDonations: donations.reduce((sum, d) => sum + (d.amount || 0), 0),
+    totalBeneficiaries: association?._count?.beneficiaries || 0,
+    totalFamilies: association?._count?.families || 0,
+    totalDonationCount: donations.length,
+    completedDonations: donations.filter(d => d.status === 'COMPLETED').length,
+    successRate: donations.length > 0 
+      ? Math.round((donations.filter(d => d.status === 'COMPLETED').length / donations.length) * 100)
+      : 0,
+    averageDonation: donations.length > 0
+      ? Math.round(donations.reduce((sum, d) => sum + (d.amount || 0), 0) / donations.length)
+      : 0,
+    donationsThisMonth: donations
+      .filter(d => new Date(d.createdAt).getMonth() === new Date().getMonth())
+      .reduce((sum, d) => sum + (d.amount || 0), 0),
+  };
 
   useEffect(() => {
     const loadAssociation = async () => {
@@ -36,6 +55,15 @@ export default function AssociationDetailPage() {
       try {
         const data = await api.getAssociation(id);
         setAssociation(data);
+        
+        // Load donations for this association
+        try {
+          const donationsData = await api.getDonations(id);
+          setDonations(Array.isArray(donationsData) ? donationsData : []);
+        } catch (err) {
+          console.warn('Could not load donations', err);
+          setDonations([]);
+        }
       } catch (err) {
         console.error('Failed to load association', err);
       } finally {
@@ -148,7 +176,7 @@ export default function AssociationDetailPage() {
                 <CardContent className="p-6">
                   <div className="text-center mb-6">
                     <Heart className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <p className="text-2xl font-bold">${association.impactMetrics.averageDonation}</p>
+                    <p className="text-2xl font-bold">{stats.averageDonation} TND</p>
                     <p className="text-sm text-muted-foreground">Average donation</p>
                   </div>
                   <Button variant="hero" size="lg" className="w-full mb-3">
@@ -174,28 +202,30 @@ export default function AssociationDetailPage() {
               <Card className="text-center p-6">
                 <Wallet className="h-5 w-5 text-primary mx-auto mb-2" />
                 <p className="text-2xl font-bold">
-                  ${(association.totalDonations / 1000).toFixed(0)}k
+                  {stats.totalDonations >= 1000 
+                    ? `${(stats.totalDonations / 1000).toFixed(0)}k` 
+                    : stats.totalDonations} TND
                 </p>
                 <p className="text-sm text-muted-foreground">Total Raised</p>
               </Card>
               <Card className="text-center p-6">
                 <HandHeart className="h-5 w-5 text-primary mx-auto mb-2" />
                 <p className="text-2xl font-bold">
-                  {association.totalBeneficiaries.toLocaleString()}
+                  {stats.totalBeneficiaries}
                 </p>
                 <p className="text-sm text-muted-foreground">Beneficiaries</p>
               </Card>
               <Card className="text-center p-6">
                 <Users className="h-5 w-5 text-primary mx-auto mb-2" />
                 <p className="text-2xl font-bold">
-                  {association.impactMetrics.familiesHelped}
+                  {stats.totalFamilies}
                 </p>
-                <p className="text-sm text-muted-foreground">Families Helped</p>
+                <p className="text-sm text-muted-foreground">Families</p>
               </Card>
               <Card className="text-center p-6">
                 <TrendingUp className="h-5 w-5 text-primary mx-auto mb-2" />
                 <p className="text-2xl font-bold">
-                  {association.impactMetrics.successRate}%
+                  {stats.successRate}%
                 </p>
                 <p className="text-sm text-muted-foreground">Success Rate</p>
               </Card>
@@ -272,12 +302,12 @@ export default function AssociationDetailPage() {
                     <CardContent className="space-y-4">
                       <div>
                         <div className="flex justify-between text-sm mb-2">
-                          <span>Monthly Goal: $25,000</span>
-                          <span className="font-medium">{((association.impactMetrics.donationsThisMonth / 25000) * 100).toFixed(0)}%</span>
+                          <span>Monthly Goal: 25,000 TND</span>
+                          <span className="font-medium">{Math.min(100, ((stats.donationsThisMonth / 25000) * 100)).toFixed(0)}%</span>
                         </div>
-                        <Progress value={(association.impactMetrics.donationsThisMonth / 25000) * 100} className="h-2" />
+                        <Progress value={Math.min(100, (stats.donationsThisMonth / 25000) * 100)} className="h-2" />
                         <p className="text-sm text-muted-foreground mt-2">
-                          ${association.impactMetrics.donationsThisMonth.toLocaleString()} raised this month
+                          {stats.donationsThisMonth.toLocaleString()} TND raised this month
                         </p>
                       </div>
                     </CardContent>
@@ -292,19 +322,19 @@ export default function AssociationDetailPage() {
                           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/10 mt-0.5">
                             <Heart className="h-3 w-3 text-success" />
                           </div>
-                          <span className="text-sm">Supported {association.impactMetrics.familiesHelped} families in the past year</span>
+                          <span className="text-sm">Supporting {stats.totalFamilies} families</span>
                         </li>
                         <li className="flex items-start gap-3">
                           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/10 mt-0.5">
                             <Heart className="h-3 w-3 text-success" />
                           </div>
-                          <span className="text-sm">Maintained {association.impactMetrics.successRate}% donation success rate</span>
+                          <span className="text-sm">{stats.successRate}% donation success rate</span>
                         </li>
                         <li className="flex items-start gap-3">
                           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/10 mt-0.5">
                             <Heart className="h-3 w-3 text-success" />
                           </div>
-                          <span className="text-sm">{association.totalMembers} active volunteers and staff</span>
+                          <span className="text-sm">{stats.totalBeneficiaries} registered beneficiaries</span>
                         </li>
                       </ul>
                     </CardContent>
@@ -319,14 +349,18 @@ export default function AssociationDetailPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {(association.donations?.length > 0) ? association.donations.slice(0, 5).map((donation: any) => (
+                      {donations.length > 0 ? donations.slice(0, 5).map((donation: any) => (
                         <div key={donation.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
                           <div className="flex items-center gap-3">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent">
                               <Heart className="h-4 w-4 text-accent-foreground" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium">Anonymous Donor</p>
+                              <p className="text-sm font-medium">
+                                {donation.beneficiary 
+                                  ? `${donation.beneficiary.firstName} ${donation.beneficiary.lastName}`
+                                  : 'Anonymous'}
+                              </p>
                               <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
                                 {new Date(donation.createdAt).toLocaleDateString()}
@@ -334,7 +368,7 @@ export default function AssociationDetailPage() {
                             </div>
                           </div>
                           <span className="font-semibold text-primary">
-                            ${donation.amount}
+                            {donation.amount} TND
                           </span>
                         </div>
                       )) : (

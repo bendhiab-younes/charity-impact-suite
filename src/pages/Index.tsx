@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AssociationCard } from '@/components/associations/AssociationCard';
 import { useAssociations } from '@/hooks/useAssociations';
+import { usePublicStats } from '@/hooks/usePublicStats';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
@@ -21,14 +22,10 @@ import {
 } from 'lucide-react';
 
 const Index = () => {
-  const { associations, isLoading } = useAssociations();
+  const { associations, isLoading: isLoadingAssociations } = useAssociations();
+  const { stats, isLoading: isLoadingStats } = usePublicStats();
   
-  const totalStats = {
-    totalDonations: 1250000,
-    totalBeneficiaries: 4500,
-    associations: associations.length || 2,
-    successRate: 94.2,
-  };
+  const isLoading = isLoadingAssociations || isLoadingStats;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -44,7 +41,7 @@ const Index = () => {
             <div className="max-w-3xl mx-auto text-center">
               <Badge variant="secondary" className="mb-6 px-4 py-1.5">
                 <Shield className="h-3.5 w-3.5 mr-1.5" />
-                Trusted by 50+ organizations
+                Trusted by {stats.totalAssociations > 0 ? stats.totalAssociations : '2+'} organizations
               </Badge>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 animate-fade-in">
@@ -75,27 +72,49 @@ const Index = () => {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-16 max-w-4xl mx-auto animate-slide-up" style={{ animationDelay: '0.3s' }}>
               <Card className="text-center p-6">
-                <p className="text-3xl md:text-4xl font-bold text-primary">
-                  ${(totalStats.totalDonations / 1000000).toFixed(1)}M
-                </p>
+                {isLoadingStats ? (
+                  <Skeleton className="h-10 w-20 mx-auto mb-2" />
+                ) : (
+                  <p className="text-3xl md:text-4xl font-bold text-primary">
+                    {stats.totalDonations >= 1000000 
+                      ? `${(stats.totalDonations / 1000000).toFixed(1)}M` 
+                      : stats.totalDonations >= 1000
+                      ? `${(stats.totalDonations / 1000).toFixed(0)}k`
+                      : stats.totalDonations.toLocaleString()} TND
+                  </p>
+                )}
                 <p className="text-sm text-muted-foreground mt-1">Total Donations</p>
               </Card>
               <Card className="text-center p-6">
-                <p className="text-3xl md:text-4xl font-bold text-primary">
-                  {(totalStats.totalBeneficiaries / 1000).toFixed(1)}k
-                </p>
+                {isLoadingStats ? (
+                  <Skeleton className="h-10 w-20 mx-auto mb-2" />
+                ) : (
+                  <p className="text-3xl md:text-4xl font-bold text-primary">
+                    {stats.totalBeneficiaries >= 1000
+                      ? `${(stats.totalBeneficiaries / 1000).toFixed(1)}k`
+                      : stats.totalBeneficiaries}
+                  </p>
+                )}
                 <p className="text-sm text-muted-foreground mt-1">Beneficiaries</p>
               </Card>
               <Card className="text-center p-6">
-                <p className="text-3xl md:text-4xl font-bold text-primary">
-                  {totalStats.associations}
-                </p>
+                {isLoadingStats ? (
+                  <Skeleton className="h-10 w-20 mx-auto mb-2" />
+                ) : (
+                  <p className="text-3xl md:text-4xl font-bold text-primary">
+                    {stats.totalAssociations}
+                  </p>
+                )}
                 <p className="text-sm text-muted-foreground mt-1">Associations</p>
               </Card>
               <Card className="text-center p-6">
-                <p className="text-3xl md:text-4xl font-bold text-primary">
-                  {totalStats.successRate}%
-                </p>
+                {isLoadingStats ? (
+                  <Skeleton className="h-10 w-20 mx-auto mb-2" />
+                ) : (
+                  <p className="text-3xl md:text-4xl font-bold text-primary">
+                    {stats.successRate}%
+                  </p>
+                )}
                 <p className="text-sm text-muted-foreground mt-1">Success Rate</p>
               </Card>
             </div>
@@ -169,14 +188,14 @@ const Index = () => {
             </div>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {isLoading ? (
+              {isLoadingAssociations ? (
                 <>
                   <Skeleton className="h-64 rounded-lg" />
                   <Skeleton className="h-64 rounded-lg" />
                   <Skeleton className="h-64 rounded-lg" />
                 </>
               ) : associations.length > 0 ? (
-                associations.map((association) => (
+                associations.slice(0, 3).map((association) => (
                   <AssociationCard key={association.id} association={association} />
                 ))
               ) : (

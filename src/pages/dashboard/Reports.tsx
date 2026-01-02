@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Download, TrendingUp, TrendingDown, DollarSign, Users, Loader2 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { exportReportSummary, exportDonations } from "@/lib/export";
+import { toast } from "sonner";
 
 const Reports = () => {
   const { donations, beneficiaries, stats, isLoading } = useDashboardData();
@@ -51,10 +53,29 @@ const Reports = () => {
             <h1 className="text-2xl font-bold text-foreground">Reports</h1>
             <p className="text-muted-foreground">Analytics and insights for your association</p>
           </div>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export Report
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                exportReportSummary({ donations, beneficiaries, stats });
+                toast.success('Report summary exported to CSV');
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Summary
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => {
+                exportDonations(donations);
+                toast.success('Full donations data exported to CSV');
+              }}
+              disabled={donations.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Donations
+            </Button>
+          </div>
         </div>
 
         {/* Summary Cards */}
