@@ -3,19 +3,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Building2, Plus, MoreHorizontal, CheckCircle2, XCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAssociations } from "@/hooks/useAssociations";
+import { Building2, Plus, MoreHorizontal, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
-const associations = [
-  { id: "1", name: "Hope Foundation", status: "active", members: 12, beneficiaries: 450, created: "2023-01-15" },
-  { id: "2", name: "Care Network", status: "active", members: 8, beneficiaries: 320, created: "2023-03-22" },
-  { id: "3", name: "Community Aid", status: "pending", members: 5, beneficiaries: 0, created: "2024-11-01" },
-  { id: "4", name: "Unity Relief", status: "active", members: 15, beneficiaries: 680, created: "2022-09-10" },
-  { id: "5", name: "Helping Hands", status: "suspended", members: 3, beneficiaries: 120, created: "2023-07-18" },
-];
 
 const AssociationsManagement = () => {
+  const { associations, isLoading } = useAssociations();
+
+  const activeCount = associations.filter(a => a.status === 'ACTIVE').length;
+  const pendingCount = associations.filter(a => a.status === 'PENDING').length;
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8 flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
-    <DashboardLayout userRole="super_admin">
+    <DashboardLayout>
       <div className="p-6 lg:p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -36,7 +46,7 @@ const AssociationsManagement = () => {
                   <Building2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">24</p>
+                  <p className="text-2xl font-bold">{associations.length}</p>
                   <p className="text-sm text-muted-foreground">Total Associations</p>
                 </div>
               </div>
@@ -49,7 +59,7 @@ const AssociationsManagement = () => {
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">21</p>
+                  <p className="text-2xl font-bold">{activeCount}</p>
                   <p className="text-sm text-muted-foreground">Active</p>
                 </div>
               </div>
@@ -62,7 +72,7 @@ const AssociationsManagement = () => {
                   <XCircle className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">3</p>
+                  <p className="text-2xl font-bold">{pendingCount}</p>
                   <p className="text-sm text-muted-foreground">Pending Review</p>
                 </div>
               </div>
@@ -87,24 +97,34 @@ const AssociationsManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {associations.map((assoc) => (
-                  <TableRow key={assoc.id}>
-                    <TableCell className="font-medium">{assoc.name}</TableCell>
-                    <TableCell>
-                      <Badge variant={assoc.status === "active" ? "default" : assoc.status === "pending" ? "secondary" : "destructive"}>
-                        {assoc.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{assoc.members}</TableCell>
-                    <TableCell>{assoc.beneficiaries}</TableCell>
-                    <TableCell className="text-muted-foreground">{assoc.created}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                {associations.length > 0 ? (
+                  associations.map((assoc) => (
+                    <TableRow key={assoc.id}>
+                      <TableCell className="font-medium">{assoc.name}</TableCell>
+                      <TableCell>
+                        <Badge variant={assoc.status === "ACTIVE" ? "default" : assoc.status === "PENDING" ? "secondary" : "destructive"}>
+                          {assoc.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{assoc._count?.users || 0}</TableCell>
+                      <TableCell>{assoc._count?.beneficiaries || 0}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(assoc.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No associations found
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </CardContent>

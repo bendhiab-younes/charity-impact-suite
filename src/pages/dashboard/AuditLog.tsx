@@ -24,8 +24,11 @@ const typeColors: Record<string, string> = {
 };
 
 const AuditLog = () => {
+  // TODO: Replace mock data with real API when /audit-logs endpoint is implemented
+  // const { logs, isLoading } = useAuditLogs();
+  
   return (
-    <DashboardLayout userRole="association_admin">
+    <DashboardLayout>
       <div className="p-6 lg:p-8">
         <div className="flex items-center justify-between mb-8">
           <div>

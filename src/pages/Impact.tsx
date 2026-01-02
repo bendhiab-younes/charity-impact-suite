@@ -1,13 +1,9 @@
 import { Header, Footer } from "@/components/layout/PublicLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useGlobalStats } from "@/hooks/useGlobalStats";
 import { TrendingUp, Users, Heart, Building2 } from "lucide-react";
 
-const stats = [
-  { icon: Building2, label: "Active Associations", value: "24", trend: "+3 this month" },
-  { icon: Users, label: "Beneficiaries Served", value: "12,450", trend: "+892 this quarter" },
-  { icon: Heart, label: "Total Donations", value: "$2.4M", trend: "+18% YoY" },
-  { icon: TrendingUp, label: "Distribution Rate", value: "94%", trend: "Above target" },
-];
 
 const recentImpact = [
   { association: "Hope Foundation", metric: "Served 450 families during Ramadan food drive", date: "Dec 2024" },
@@ -17,6 +13,35 @@ const recentImpact = [
 ];
 
 const Impact = () => {
+  const { stats, isLoading } = useGlobalStats();
+
+  const displayStats = [
+    { 
+      icon: Building2, 
+      label: "Active Associations", 
+      value: stats.activeAssociations.toString(), 
+      trend: `${stats.totalAssociations} total` 
+    },
+    { 
+      icon: Users, 
+      label: "Beneficiaries Served", 
+      value: stats.totalBeneficiaries.toLocaleString(), 
+      trend: "Across all associations" 
+    },
+    { 
+      icon: Heart, 
+      label: "Total Donations", 
+      value: `${(stats.totalDonationAmount / 1000).toFixed(0)}k TND`, 
+      trend: `${stats.growthRate}% growth` 
+    },
+    { 
+      icon: TrendingUp, 
+      label: "Success Rate", 
+      value: `${stats.successRate}%`, 
+      trend: "Completed donations" 
+    },
+  ];
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -36,20 +61,30 @@ const Impact = () => {
         <section className="py-16 px-4">
           <div className="container mx-auto max-w-5xl">
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {stats.map((stat, index) => (
-                <Card key={index}>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                        <stat.icon className="h-5 w-5" />
+              {isLoading ? (
+                Array(4).fill(0).map((_, i) => (
+                  <Card key={i}>
+                    <CardContent className="pt-6">
+                      <Skeleton className="h-20 w-full" />
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                displayStats.map((stat, index) => (
+                  <Card key={index}>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                          <stat.icon className="h-5 w-5" />
+                        </div>
+                        <span className="text-sm text-muted-foreground">{stat.label}</span>
                       </div>
-                      <span className="text-sm text-muted-foreground">{stat.label}</span>
-                    </div>
-                    <div className="text-3xl font-bold text-foreground mb-1">{stat.value}</div>
-                    <div className="text-xs text-success">{stat.trend}</div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="text-3xl font-bold text-foreground mb-1">{stat.value}</div>
+                      <div className="text-xs text-success">{stat.trend}</div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
         </section>

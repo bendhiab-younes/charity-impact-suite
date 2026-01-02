@@ -21,8 +21,11 @@ const roleLabels: Record<string, string> = {
 };
 
 const UsersManagement = () => {
+  // TODO: Replace mock data with real API when /users endpoint is implemented
+  // const { users, isLoading } = useUsers();
+  
   return (
-    <DashboardLayout userRole="association_admin">
+    <DashboardLayout>
       <div className="p-6 lg:p-8">
         <div className="flex items-center justify-between mb-8">
           <div>

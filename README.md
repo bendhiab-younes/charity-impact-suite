@@ -177,18 +177,57 @@ The frontend will run at http://localhost:5173
 - [ ] Production deployment configuration
 - [ ] Payment integration (demo)
 
-## Known Issues & Bugs
+## Application Status & Audit Findings
 
-### Fixed Issues
-- **Status case mismatch** - Fixed: DonationsTable now handles both uppercase (API) and lowercase status values
-- **Dashboard error for users without association** - Fixed: Shows friendly message for donors/super admins
-- **All pages connected to API** - All management pages now fetch real data from the database
+### ✅ Fully Dynamic Pages (Connected to Real API)
+1. **Dashboard** - Real stats from user's association
+2. **Donations** - Full CRUD with role-based permissions
+3. **Beneficiaries** - List, create, update status (role-based)
+4. **Families** - List, create (role-based)
+5. **Rules** - List, create, toggle (role-based)
+6. **Reports** - Real statistics and monthly breakdown
+7. **Settings** - User profile from AuthContext
+8. **New Donation Form** - Creates real donations with validation
+9. **Associations (Public)** - Real data with search/filter
+10. **Association Detail** - Dynamic stats from donations/beneficiaries
+11. **Home Page** - Real aggregate statistics
+12. **Impact Page** - Real platform-wide statistics
+13. **Associations Management** - Real data for Super Admin
 
-### Current Limitations
-1. **Donors and Super Admins** - Dashboard shows "No Association Linked" message since they're not tied to a specific association. This is expected behavior.
-2. **Frontend type definitions** - Types in `src/types/index.ts` use lowercase enum values while API returns uppercase. Components handle this with case-insensitive comparisons.
-3. **No logout redirect** - After logout, user stays on current page instead of redirecting to home.
-4. **Create modals not implemented** - Add Beneficiary/Family/Rule buttons show UI but don't have working modals yet.
+### ⚠️ Pages with Mock Data (Backend Not Implemented)
+1. **Users Management** - Mock data (needs `/users` API endpoint)
+2. **Audit Log** - Mock data (needs `/audit-logs` API endpoint)
+3. **Impact Page** - "Recent Impact Stories" section is static
+
+### 🔒 Role-Based Access Control (Implemented)
+| Feature | Super Admin | Association Admin | Member | Donor |
+|---------|:-----------:|:-----------------:|:------:|:-----:|
+| View All Associations | ✅ | ❌ | ❌ | ❌ |
+| Manage Users | ✅ | ✅ | ❌ | ❌ |
+| Add Beneficiaries | ✅ | ✅ | ❌ | ❌ |
+| Add Families | ✅ | ✅ | ❌ | ❌ |
+| Create Rules | ✅ | ✅ | ❌ | ❌ |
+| Approve Donations | ✅ | ✅ | ❌ | ❌ |
+| View Reports | ✅ | ✅ | ❌ | ❌ |
+| View Own Donations | ✅ | ✅ | ✅ | ✅ |
+| Create Donations | ✅ | ✅ | ❌ | ❌ |
+
+### 🎯 Features Implemented
+- ✅ **CSV Export** - Donations, Beneficiaries, Families, Reports
+- ✅ **Search & Filtering** - Associations page with category filters
+- ✅ **Create Modals** - Beneficiary, Family, Rule creation
+- ✅ **Role Indicators** - Color-coded badges in sidebar
+- ✅ **Loading States** - Skeletons and spinners throughout
+- ✅ **Error Handling** - Toast notifications for all actions
+- ✅ **Data Persistence** - All CRUD operations save to database
+- ✅ **Donor Filtering** - Donors see only their own donations
+
+### Known Issues & Limitations
+1. **Donors and Super Admins** - Dashboard shows "No Association Linked" (expected behavior)
+2. **Type Case Mismatch** - Frontend uses lowercase, API uses uppercase (handled with normalization)
+3. **Users/Audit Pages** - Require backend implementation
+4. **Settings Save** - Profile update endpoint not implemented
+5. **Family Cooldown** - Not enforced in UI (backend logic exists)
 
 ## API Endpoints
 
