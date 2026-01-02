@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { Header, Footer } from '@/components/layout/PublicLayout';
 import { AssociationCard } from '@/components/associations/AssociationCard';
 import { Button } from '@/components/ui/button';
@@ -7,8 +8,41 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAssociations } from '@/hooks/useAssociations';
 import { Search, Filter, MapPin, Loader2 } from 'lucide-react';
 
+const categories = [
+  { id: 'all', label: 'All Categories', keywords: [] },
+  { id: 'food', label: 'Food Security', keywords: ['food', 'alimentaire', 'faim', 'hunger', 'meal', 'repas'] },
+  { id: 'education', label: 'Education', keywords: ['education', 'école', 'school', 'éducatif', 'learning', 'scolaire'] },
+  { id: 'housing', label: 'Housing', keywords: ['housing', 'logement', 'home', 'shelter', 'maison', 'hébergement'] },
+  { id: 'healthcare', label: 'Healthcare', keywords: ['health', 'santé', 'medical', 'médical', 'hospital', 'clinic'] },
+  { id: 'emergency', label: 'Emergency Relief', keywords: ['emergency', 'urgence', 'relief', 'disaster', 'crisis', 'aide'] },
+];
+
 export default function AssociationsPage() {
   const { associations, isLoading } = useAssociations();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Filter associations based on search and category
+  const filteredAssociations = useMemo(() => {
+    return associations.filter((assoc) => {
+      // Search filter
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = !searchQuery || 
+        assoc.name?.toLowerCase().includes(searchLower) ||
+        assoc.description?.toLowerCase().includes(searchLower) ||
+        assoc.address?.toLowerCase().includes(searchLower);
+
+      // Category filter
+      const category = categories.find(c => c.id === selectedCategory);
+      const matchesCategory = selectedCategory === 'all' || 
+        category?.keywords.some(keyword => 
+          assoc.name?.toLowerCase().includes(keyword) ||
+          assoc.description?.toLowerCase().includes(keyword)
+        );
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [associations, searchQuery, selectedCategory]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -29,34 +63,45 @@ export default function AssociationsPage() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Search by name or cause..." 
+                placeholder="Search by name, description, or location..." 
                 className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="outline">
-              <MapPin className="h-4 w-4 mr-2" />
-              Location
-            </Button>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </Button>
+            {(searchQuery || selectedCategory !== 'all') && (
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('all');
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
           </div>
 
           {/* Filter Tags */}
           <div className="flex flex-wrap gap-2 mb-8">
-            <Badge variant="default">All Categories</Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-accent">Food Security</Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-accent">Education</Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-accent">Housing</Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-accent">Healthcare</Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-accent">Emergency Relief</Badge>
+            {categories.map((category) => (
+              <Badge 
+                key={category.id}
+                variant={selectedCategory === category.id ? "default" : "outline"}
+                className="cursor-pointer hover:bg-accent transition-colors"
+                onClick={() => setSelectedCategory(category.id)}
+              >
+                {category.label}
+              </Badge>
+            ))}
           </div>
 
           {/* Results */}
           <div className="mb-4">
             <p className="text-sm text-muted-foreground">
-              Showing {associations.length} associations
+              Showing {filteredAssociations.length} of {associations.length} associations
+              {selectedCategory !== 'all' && ` in "${categories.find(c => c.id === selectedCategory)?.label}"`}
+              {searchQuery && ` matching "${searchQuery}"`}
             </p>
           </div>
 
@@ -68,13 +113,28 @@ export default function AssociationsPage() {
                 <Skeleton className="h-64 rounded-lg" />
                 <Skeleton className="h-64 rounded-lg" />
               </>
-            ) : associations.length > 0 ? (
-              associations.map((association) => (
+            ) : filteredAssociations.length > 0 ? (
+              filteredAssociations.map((association) => (
                 <AssociationCard key={association.id} association={association} />
               ))
             ) : (
-              <div className="col-span-3 text-center py-12 text-muted-foreground">
-                No associations found
+              <div className="col-span-3 text-center py-12">
+                <p className="text-muted-foreground mb-4">
+                  {associations.length === 0 
+                    ? "No associations found" 
+                    : "No associations match your filters"}
+                </p>
+                {(searchQuery || selectedCategory !== 'all') && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedCategory('all');
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                )}
               </div>
             )}
           </div>
