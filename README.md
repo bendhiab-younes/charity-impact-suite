@@ -1,73 +1,201 @@
-# Welcome to your Lovable project
+# Charity Impact Suite
 
-## Project info
+A comprehensive donation management platform for charity associations, designed to ensure transparency, prevent fraud, and maximize the impact of charitable giving.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Tech Stack
 
-## How can I edit this code?
+### Frontend
+| Technology | Purpose |
+|------------|---------|
+| **React 18** | UI framework |
+| **TypeScript** | Type safety |
+| **Vite** | Build tool & dev server |
+| **Tailwind CSS** | Styling |
+| **shadcn/ui** | UI component library |
+| **React Router DOM** | Client-side routing |
+| **TanStack React Query** | Data fetching & caching |
+| **Lucide React** | Icons |
 
-There are several ways of editing your application.
+### Backend
+| Technology | Purpose |
+|------------|---------|
+| **NestJS** | Node.js framework |
+| **TypeScript** | Type safety |
+| **Prisma ORM** | Database ORM |
+| **SQLite** | Database (file-based, no setup required) |
+| **JWT + Passport** | Authentication |
+| **bcrypt** | Password hashing |
+| **class-validator** | Request validation |
+| **Swagger** | API documentation |
 
-**Use Lovable**
+### Database
+The project uses **SQLite** - a lightweight, file-based database that requires no external setup. The database file is stored at `api/prisma/dev.db`.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Project Structure
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+charity-impact-suite/
+├── src/                    # Frontend React application
+│   ├── components/         # Reusable UI components
+│   ├── contexts/           # React contexts (Auth)
+│   ├── hooks/              # Custom React hooks
+│   ├── lib/                # Utilities & API client
+│   ├── pages/              # Page components
+│   └── types/              # TypeScript types
+│
+├── api/                    # Backend NestJS application
+│   ├── prisma/
+│   │   ├── schema.prisma   # Database schema
+│   │   ├── seed.ts         # Demo data seeder
+│   │   └── dev.db          # SQLite database file
+│   └── src/
+│       ├── auth/           # Authentication module
+│       ├── users/          # Users module
+│       ├── associations/   # Associations module
+│       ├── beneficiaries/  # Beneficiaries module
+│       ├── families/       # Families module
+│       ├── donations/      # Donations module
+│       ├── rules/          # Donation rules module
+│       └── prisma/         # Database service
 ```
 
-**Edit a file directly in GitHub**
+## How to Run the Project
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Prerequisites
+- **Node.js** v18 or higher
+- **npm** v9 or higher
 
-**Use GitHub Codespaces**
+### 1. Clone & Install Dependencies
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+# Clone the repository
+git clone <repository-url>
+cd charity-impact-suite
 
-## What technologies are used for this project?
+# Install frontend dependencies
+npm install
 
-This project is built with:
+# Install backend dependencies
+cd api
+npm install
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### 2. Set Up the Database
 
-## How can I deploy this project?
+```bash
+# From the api/ directory
+npx prisma generate      # Generate Prisma client
+npx prisma db push       # Create database tables
+npx ts-node prisma/seed.ts  # Seed demo data
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### 3. Start the Servers
 
-## Can I connect a custom domain to my Lovable project?
+**Terminal 1 - Backend API:**
+```bash
+cd api
+npm run start:dev
+```
+The API will run at http://localhost:3001
 
-Yes, you can!
+**Terminal 2 - Frontend:**
+```bash
+# From root directory
+npm run dev
+```
+The frontend will run at http://localhost:5173
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### 4. Access the Application
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:3001 |
+| API Documentation (Swagger) | http://localhost:3001/api/docs |
+
+### Demo Accounts
+
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | admin@charity.tn | password123 |
+| Association Admin | admin@espoir-tunisie.org | password123 |
+| Association Member | membre@espoir-tunisie.org | password123 |
+| Donor | donateur@email.tn | password123 |
+
+## Implemented Features
+
+### Backend (API)
+- [x] **Authentication** - JWT-based login/register with role-based access
+- [x] **User Management** - CRUD operations for users
+- [x] **Associations** - Create, read, update associations
+- [x] **Beneficiaries** - Manage beneficiaries with eligibility status
+- [x] **Families** - Family management with cooldown tracking
+- [x] **Donations** - Full donation workflow (create, approve, reject, complete)
+- [x] **Donation Rules** - Configurable rules (frequency, amount, eligibility)
+- [x] **API Documentation** - Swagger/OpenAPI docs
+
+### Frontend
+- [x] **Public Landing Page** - Hero, features, association listing
+- [x] **Authentication Pages** - Login and registration with role selection
+- [x] **Dashboard** - Stats overview connected to real API data
+- [x] **Association Cards** - Display associations from database
+- [x] **Responsive Design** - Mobile-friendly UI
+- [x] **API Integration** - Auth context and API client
+
+## Features Not Yet Implemented
+
+### Backend
+- [ ] Activity logging/audit trails
+- [ ] Email notifications
+- [ ] File uploads (logos, documents)
+- [ ] Advanced search and filtering
+- [ ] Data export (CSV, PDF reports)
+- [ ] Rate limiting
+
+### Frontend
+- [ ] Beneficiaries management page (connected to API)
+- [ ] Families management page (connected to API)
+- [ ] Donations management page (connected to API)
+- [ ] Rules configuration page (connected to API)
+- [ ] User profile editing
+- [ ] Reports and analytics dashboards
+- [ ] Real-time notifications
+- [ ] Dark mode toggle
+- [ ] Multi-language support (French/Arabic)
+
+### General
+- [ ] Unit and integration tests
+- [ ] CI/CD pipeline
+- [ ] Production deployment configuration
+- [ ] Payment integration (demo)
+
+## Known Issues & Bugs
+
+### Fixed Issues
+- **Status case mismatch** - Fixed: DonationsTable now handles both uppercase (API) and lowercase status values
+- **Dashboard error for users without association** - Fixed: Shows friendly message for donors/super admins
+
+### Current Limitations
+1. **Donors and Super Admins** - Dashboard shows "No Association Linked" message since they're not tied to a specific association. This is expected behavior.
+2. **Frontend type definitions** - Types in `src/types/index.ts` use lowercase enum values while API returns uppercase. Components handle this with case-insensitive comparisons.
+3. **No logout redirect** - After logout, user stays on current page instead of redirecting to home.
+4. **Missing form pages** - Donation/Beneficiary/Family creation forms are not yet connected to the API.
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /api/auth/register | Register new user |
+| POST | /api/auth/login | Login user |
+| GET | /api/auth/me | Get current user |
+| GET | /api/associations | List associations |
+| GET | /api/beneficiaries | List beneficiaries |
+| GET | /api/families | List families |
+| GET | /api/donations | List donations |
+| GET | /api/rules | List donation rules |
+
+For full API documentation, visit http://localhost:3001/api/docs when the backend is running.
+
+## License
+
+This project is for educational purposes (school project).

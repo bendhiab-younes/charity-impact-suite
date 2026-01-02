@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Models - Using String for enum fields (SQLite doesn't support enums)
+// UserRole: SUPER_ADMIN, ASSOCIATION_ADMIN, ASSOCIATION_MEMBER, DONOR
+// AssociationStatus: ACTIVE, PENDING, SUSPENDED
+// BeneficiaryStatus: ELIGIBLE, INELIGIBLE, PENDING_REVIEW
+// FamilyStatus: ELIGIBLE, INELIGIBLE, COOLDOWN
+// DonationStatus: PENDING, APPROVED, REJECTED, COMPLETED
+// DonationType: ONE_TIME, RECURRING
+// PaymentMethod: CARD, BANK_TRANSFER, CASH, CHECK
+// RuleType: FREQUENCY, AMOUNT, ELIGIBILITY
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  role          String   @default("DONOR")
+  avatar        String?
+  
+  association   Association? @relation(fields: [associationId], references: [id])
+  associationId String?
+  
+  donations     Donation[]   @relation("DonorDonations")
+  activityLogs  ActivityLog[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Association {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  logo        String?
+  website     String?
+  email       String
+  phone       String?
+  address     String?
+  status      String   @default("PENDING")
+  
+  users         User[]
+  beneficiaries Beneficiary[]
+  families      Family[]
+  donations     Donation[]
+  rules         DonationRule[]
+  activityLogs  ActivityLog[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Family {
+  id            String    @id @default(cuid())
+  name          String
+  memberCount   Int       @default(1)
+  address       String?
+  status        String    @default("ELIGIBLE")
+  totalReceived Float     @default(0)
+  lastDonationDate DateTime?
+  
+  association   Association  @relation(fields: [associationId], references: [id], onDelete: Cascade)
+  associationId String
+  
+  beneficiaries Beneficiary[]
+  donations     Donation[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Beneficiary {
+  id              String    @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String?
+  phone           String?
+  address         String?
+  status          String    @default("PENDING_REVIEW")
+  totalReceived   Float     @default(0)
+  lastDonationDate DateTime?
+  eligibilityNotes String?
+  
+  association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
+  associationId String
+  
+  family        Family      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  familyId      String
+  
+  donations     Donation[]
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Donation {
+  id          String    @id @default(cuid())
+  amount      Float
+  currency    String    @default("TND")
+  status      String    @default("PENDING")
+  type        String    @default("ONE_TIME")
+  method      String    @default("CASH")
+  notes       String?
+  processedAt DateTime?
+  
+  association   Association  @relation(fields: [associationId], references: [id], onDelete: Cascade)
+  associationId String
+  
+  donor         User?        @relation("DonorDonations", fields: [donorId], references: [id])
+  donorId       String?
+  
+  beneficiary   Beneficiary? @relation(fields: [beneficiaryId], references: [id])
+  beneficiaryId String?
+  
+  family        Family?      @relation(fields: [familyId], references: [id])
+  familyId      String?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model DonationRule {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  type        String
+  value       Float
+  unit        String?
+  isActive    Boolean  @default(true)
+  
+  association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
+  associationId String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  action     String
+  details    String
+  entityType String
+  entityId   String
+  
+  association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
+  associationId String
+  
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  
+  createdAt  DateTime @default(now())
+}

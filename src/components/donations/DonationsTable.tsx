@@ -18,19 +18,23 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 interface DonationsTableProps {
-  donations: Donation[];
+  donations: any[];
   showActions?: boolean;
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
 }
 
 export function DonationsTable({ donations, showActions = true, onApprove, onReject }: DonationsTableProps) {
-  const statusVariant = {
+  const statusVariant: Record<string, string> = {
     pending: 'warning',
     approved: 'info',
     rejected: 'destructive',
     completed: 'success',
-  } as const;
+    PENDING: 'warning',
+    APPROVED: 'info',
+    REJECTED: 'destructive',
+    COMPLETED: 'success',
+  };
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -70,21 +74,21 @@ export function DonationsTable({ donations, showActions = true, onApprove, onRej
               </TableCell>
               <TableCell>
                 <Badge variant="muted" className="capitalize">
-                  {donation.type.replace('_', ' ')}
+                  {(donation.type || 'ONE_TIME').toLowerCase().replace('_', ' ')}
                 </Badge>
               </TableCell>
               <TableCell className="capitalize text-sm text-muted-foreground">
-                {donation.method.replace('_', ' ')}
+                {(donation.method || 'CASH').toLowerCase().replace('_', ' ')}
               </TableCell>
               <TableCell>
-                <Badge variant={statusVariant[donation.status]} className="capitalize">
-                  {donation.status}
+                <Badge variant={(statusVariant[donation.status] || 'secondary') as any} className="capitalize">
+                  {(donation.status || 'pending').toLowerCase()}
                 </Badge>
               </TableCell>
               {showActions && (
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    {donation.status === 'pending' && (
+                    {(donation.status === 'pending' || donation.status === 'PENDING') && (
                       <>
                         <Button 
                           variant="ghost" 

@@ -1,18 +1,72 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Heart, ArrowLeft, Building2, User, Users, Shield } from 'lucide-react';
+import { Heart, ArrowLeft, Building2, User, Users, Shield, Loader2 } from 'lucide-react';
 import { UserRole } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { login, register } = useAuth();
+  const { toast } = useToast();
   const defaultTab = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
   const [selectedRole, setSelectedRole] = useState<UserRole>('donor');
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  
+  // Signup form state
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      await login(loginEmail, loginPassword);
+      toast({ title: 'Welcome back!', description: 'You have successfully logged in.' });
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const roleMap: Record<string, string> = {
+        donor: 'DONOR',
+        association_admin: 'ASSOCIATION_ADMIN',
+        association_member: 'ASSOCIATION_MEMBER',
+      };
+      await register({
+        email: signupEmail,
+        password: signupPassword,
+        name: `${firstName} ${lastName}`.trim(),
+        role: roleMap[selectedRole],
+      });
+      toast({ title: 'Account created!', description: 'Welcome to CharityHub.' });
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast({ title: 'Registration failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const roles = [
     { value: 'donor', label: 'Donor', description: 'Browse and donate to associations', icon: User },
@@ -54,30 +108,38 @@ export default function AuthPage() {
             <CardContent>
               {/* Login Tab */}
               <TabsContent value="login" className="mt-0 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input 
-                    id="login-email" 
-                    type="email" 
-                    placeholder="you@example.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="login-password">Password</Label>
-                    <a href="#" className="text-xs text-primary hover:underline">
-                      Forgot password?
-                    </a>
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <Input 
+                      id="login-email" 
+                      type="email" 
+                      placeholder="you@example.com"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      required
+                    />
                   </div>
-                  <Input 
-                    id="login-password" 
-                    type="password" 
-                    placeholder="••••••••"
-                  />
-                </div>
-                <Button variant="hero" className="w-full" asChild>
-                  <Link to="/dashboard">Sign In</Link>
-                </Button>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="login-password">Password</Label>
+                      <a href="#" className="text-xs text-primary hover:underline">
+                        Forgot password?
+                      </a>
+                    </div>
+                    <Input 
+                      id="login-password" 
+                      type="password" 
+                      placeholder="••••••••"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button variant="hero" className="w-full" type="submit" disabled={isLoading}>
+                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...</> : 'Sign In'}
+                  </Button>
+                </form>
                 <p className="text-center text-xs text-muted-foreground">
                   By signing in, you agree to our{' '}
                   <a href="#" className="text-primary hover:underline">Terms</a>
@@ -88,14 +150,27 @@ export default function AuthPage() {
 
               {/* Signup Tab */}
               <TabsContent value="signup" className="mt-0 space-y-4">
+                <form onSubmit={handleSignup} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-firstname">First Name</Label>
-                    <Input id="signup-firstname" placeholder="John" />
+                    <Input 
+                      id="signup-firstname" 
+                      placeholder="John"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-lastname">Last Name</Label>
-                    <Input id="signup-lastname" placeholder="Doe" />
+                    <Input 
+                      id="signup-lastname" 
+                      placeholder="Doe"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -104,6 +179,9 @@ export default function AuthPage() {
                     id="signup-email" 
                     type="email" 
                     placeholder="you@example.com"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
@@ -112,6 +190,10 @@ export default function AuthPage() {
                     id="signup-password" 
                     type="password" 
                     placeholder="••••••••"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    required
+                    minLength={6}
                   />
                 </div>
                 
@@ -146,9 +228,10 @@ export default function AuthPage() {
                   </RadioGroup>
                 </div>
 
-                <Button variant="hero" className="w-full" asChild>
-                  <Link to="/dashboard">Create Account</Link>
+                <Button variant="hero" className="w-full" type="submit" disabled={isLoading}>
+                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...</> : 'Create Account'}
                 </Button>
+                </form>
                 
                 <p className="text-center text-xs text-muted-foreground">
                   By signing up, you agree to our{' '}

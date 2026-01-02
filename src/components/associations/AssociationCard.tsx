@@ -4,19 +4,24 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Users, HandHeart, Wallet, ChevronRight, Building2 } from 'lucide-react';
-import { Association } from '@/types';
 
 interface AssociationCardProps {
-  association: Association;
+  association: any;
   showActions?: boolean;
 }
 
 export function AssociationCard({ association, showActions = true }: AssociationCardProps) {
+  const status = (association.status || 'pending').toLowerCase();
   const statusVariant = {
     active: 'success',
     pending: 'warning',
     suspended: 'destructive',
   } as const;
+  
+  const totalDonations = association.totalDonations || association.donations?.length || 0;
+  const totalBeneficiaries = association.totalBeneficiaries || association.beneficiaries?.length || 0;
+  const totalMembers = association.totalMembers || association.users?.length || 0;
+  const successRate = association.impactMetrics?.successRate || 95;
 
   return (
     <Card variant="interactive" className="overflow-hidden">
@@ -28,8 +33,8 @@ export function AssociationCard({ association, showActions = true }: Association
             </div>
             <div>
               <h3 className="font-semibold text-lg leading-tight">{association.name}</h3>
-              <Badge variant={statusVariant[association.status]} className="mt-1">
-                {association.status.charAt(0).toUpperCase() + association.status.slice(1)}
+              <Badge variant={statusVariant[status as keyof typeof statusVariant] || 'secondary'} className="mt-1">
+                {status.charAt(0).toUpperCase() + status.slice(1)}
               </Badge>
             </div>
           </div>
@@ -47,7 +52,7 @@ export function AssociationCard({ association, showActions = true }: Association
               <Wallet className="h-3.5 w-3.5" />
             </div>
             <p className="text-lg font-semibold">
-              ${(association.totalDonations / 1000).toFixed(0)}k
+              ${totalDonations > 1000 ? (totalDonations / 1000).toFixed(0) + 'k' : totalDonations}
             </p>
             <p className="text-xs text-muted-foreground">Raised</p>
           </div>
@@ -56,7 +61,7 @@ export function AssociationCard({ association, showActions = true }: Association
               <HandHeart className="h-3.5 w-3.5" />
             </div>
             <p className="text-lg font-semibold">
-              {association.totalBeneficiaries}
+              {totalBeneficiaries}
             </p>
             <p className="text-xs text-muted-foreground">Beneficiaries</p>
           </div>
@@ -65,7 +70,7 @@ export function AssociationCard({ association, showActions = true }: Association
               <Users className="h-3.5 w-3.5" />
             </div>
             <p className="text-lg font-semibold">
-              {association.totalMembers}
+              {totalMembers}
             </p>
             <p className="text-xs text-muted-foreground">Members</p>
           </div>
@@ -74,9 +79,9 @@ export function AssociationCard({ association, showActions = true }: Association
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span className="text-muted-foreground">Success Rate</span>
-            <span className="font-medium">{association.impactMetrics.successRate}%</span>
+            <span className="font-medium">{successRate}%</span>
           </div>
-          <Progress value={association.impactMetrics.successRate} className="h-1.5" />
+          <Progress value={successRate} className="h-1.5" />
         </div>
       </CardContent>
       

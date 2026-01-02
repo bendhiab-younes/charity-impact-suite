@@ -4,8 +4,10 @@ import { DonationsTable } from '@/components/donations/DonationsTable';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { mockDonations, mockAssociations, mockBeneficiaries } from '@/data/mockData';
 import { Link } from 'react-router-dom';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Wallet, 
   Users, 
@@ -14,13 +16,46 @@ import {
   ArrowRight,
   AlertCircle,
   CheckCircle2,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
 
 export default function DashboardPage() {
-  const association = mockAssociations[0];
-  const pendingDonations = mockDonations.filter(d => d.status === 'pending');
-  const pendingBeneficiaries = mockBeneficiaries.filter(b => b.status === 'pending_review');
+  const { user } = useAuth();
+  const { association, donations, pendingDonations, pendingBeneficiaries, stats, isLoading, error } = useDashboardData();
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8 space-y-8">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error && !association) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8">
+          <Card className="border-warning/50 bg-warning/5">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <AlertCircle className="h-12 w-12 text-warning mb-4" />
+              <h2 className="text-xl font-semibold mb-2">No Association Linked</h2>
+              <p className="text-muted-foreground mb-4 max-w-md">
+                Your account is not linked to any association. Contact an administrator or create a new association.
+              </p>
+              <Button variant="outline" asChild>
+                <Link to="/associations">Browse Associations</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -30,7 +65,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-2xl font-bold">Dashboard</h1>
             <p className="text-muted-foreground">
-              Welcome back to {association.name}
+              Welcome back{association ? ` to ${association.name}` : ''}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -47,32 +82,28 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Total Donations"
-            value={association.totalDonations}
+            value={stats.totalDonations}
             format="currency"
-            change={12.5}
-            changeLabel="vs last month"
+            changeLabel="all time"
             icon={Wallet}
           />
           <StatCard
             title="This Month"
-            value={association.impactMetrics.donationsThisMonth}
+            value={stats.donationsThisMonth}
             format="currency"
-            change={8.2}
-            changeLabel="vs last month"
+            changeLabel="current month"
             icon={TrendingUp}
           />
           <StatCard
             title="Beneficiaries"
-            value={association.totalBeneficiaries}
-            change={5.3}
-            changeLabel="this month"
+            value={stats.totalBeneficiaries}
+            changeLabel="registered"
             icon={HandHeart}
           />
           <StatCard
             title="Families Helped"
-            value={association.impactMetrics.familiesHelped}
-            change={3.1}
-            changeLabel="this month"
+            value={stats.familiesHelped}
+            changeLabel="total"
             icon={Users}
           />
         </div>
@@ -122,7 +153,7 @@ export default function DashboardPage() {
                 <CheckCircle2 className="h-5 w-5 text-success" />
               </div>
               <div className="flex-1">
-                <p className="font-medium">{association.impactMetrics.successRate}% Success Rate</p>
+                <p className="font-medium">{stats.successRate}% Success Rate</p>
                 <p className="text-sm text-muted-foreground">Donations reaching beneficiaries</p>
               </div>
             </CardContent>
@@ -144,7 +175,7 @@ export default function DashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <DonationsTable donations={mockDonations.slice(0, 5)} />
+            <DonationsTable donations={donations.slice(0, 5)} />
           </CardContent>
         </Card>
       </div>

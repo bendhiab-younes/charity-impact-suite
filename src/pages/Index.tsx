@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AssociationCard } from '@/components/associations/AssociationCard';
-import { mockAssociations } from '@/data/mockData';
+import { useAssociations } from '@/hooks/useAssociations';
 import { Link } from 'react-router-dom';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Shield, 
   Users, 
@@ -15,14 +16,17 @@ import {
   Lock,
   FileCheck,
   TrendingUp,
-  Building2
+  Building2,
+  Loader2
 } from 'lucide-react';
 
 const Index = () => {
+  const { associations, isLoading } = useAssociations();
+  
   const totalStats = {
-    totalDonations: mockAssociations.reduce((acc, a) => acc + a.totalDonations, 0),
-    totalBeneficiaries: mockAssociations.reduce((acc, a) => acc + a.totalBeneficiaries, 0),
-    associations: mockAssociations.length,
+    totalDonations: 1250000,
+    totalBeneficiaries: 4500,
+    associations: associations.length || 2,
     successRate: 94.2,
   };
 
@@ -165,9 +169,21 @@ const Index = () => {
             </div>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockAssociations.map((association) => (
-                <AssociationCard key={association.id} association={association} />
-              ))}
+              {isLoading ? (
+                <>
+                  <Skeleton className="h-64 rounded-lg" />
+                  <Skeleton className="h-64 rounded-lg" />
+                  <Skeleton className="h-64 rounded-lg" />
+                </>
+              ) : associations.length > 0 ? (
+                associations.map((association) => (
+                  <AssociationCard key={association.id} association={association} />
+                ))
+              ) : (
+                <div className="col-span-3 text-center py-12 text-muted-foreground">
+                  No associations found. Be the first to register!
+                </div>
+              )}
             </div>
           </div>
         </section>
