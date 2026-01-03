@@ -8,6 +8,7 @@ import { BeneficiariesModule } from './beneficiaries/beneficiaries.module';
 import { FamiliesModule } from './families/families.module';
 import { DonationsModule } from './donations/donations.module';
 import { RulesModule } from './rules/rules.module';
+import { MobileModule } from './mobile/mobile.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { RulesModule } from './rules/rules.module';
     FamiliesModule,
     DonationsModule,
     RulesModule,
+    MobileModule,
   ],
 })
 export class AppModule {}
