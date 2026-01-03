@@ -32,13 +32,11 @@ export function AddBeneficiaryModal({ open, onOpenChange, onSuccess }: AddBenefi
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    nationalId: '',
-    dateOfBirth: '',
     phone: '',
     email: '',
     address: '',
     familyId: '',
-    notes: '',
+    eligibilityNotes: '',
   });
 
   useEffect(() => {
@@ -61,13 +59,11 @@ export function AddBeneficiaryModal({ open, onOpenChange, onSuccess }: AddBenefi
     setFormData({
       firstName: '',
       lastName: '',
-      nationalId: '',
-      dateOfBirth: '',
       phone: '',
       email: '',
       address: '',
       familyId: '',
-      notes: '',
+      eligibilityNotes: '',
     });
   };
 
@@ -83,19 +79,22 @@ export function AddBeneficiaryModal({ open, onOpenChange, onSuccess }: AddBenefi
       return;
     }
 
+    if (!formData.familyId) {
+      toast.error('Please select a family for this beneficiary');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await api.createBeneficiary({
         associationId: user.associationId,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        nationalId: formData.nationalId || undefined,
-        dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth).toISOString() : undefined,
         phone: formData.phone || undefined,
         email: formData.email || undefined,
         address: formData.address || undefined,
-        familyId: formData.familyId || undefined,
-        notes: formData.notes || undefined,
+        familyId: formData.familyId,
+        eligibilityNotes: formData.eligibilityNotes || undefined,
       });
       toast.success('Beneficiary added successfully');
       resetForm();
@@ -144,27 +143,6 @@ export function AddBeneficiaryModal({ open, onOpenChange, onSuccess }: AddBenefi
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nationalId">National ID</Label>
-              <Input
-                id="nationalId"
-                value={formData.nationalId}
-                onChange={(e) => setFormData(prev => ({ ...prev, nationalId: e.target.value }))}
-                placeholder="e.g., 12345678"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="dateOfBirth">Date of Birth</Label>
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
@@ -186,21 +164,25 @@ export function AddBeneficiaryModal({ open, onOpenChange, onSuccess }: AddBenefi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="family">Family</Label>
+            <Label htmlFor="family">Family *</Label>
             <Select
               value={formData.familyId}
               onValueChange={(v) => setFormData(prev => ({ ...prev, familyId: v }))}
+              required
             >
               <SelectTrigger>
-                <SelectValue placeholder={isLoadingFamilies ? "Loading..." : "Select a family (optional)"} />
+                <SelectValue placeholder={isLoadingFamilies ? "Loading..." : "Select a family"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No family</SelectItem>
-                {families.map((f) => (
-                  <SelectItem key={f.id} value={f.id}>
-                    {f.name}
-                  </SelectItem>
-                ))}
+                {families.length === 0 ? (
+                  <SelectItem value="" disabled>No families - create one first</SelectItem>
+                ) : (
+                  families.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -216,12 +198,12 @@ export function AddBeneficiaryModal({ open, onOpenChange, onSuccess }: AddBenefi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="eligibilityNotes">Eligibility Notes</Label>
             <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Additional notes..."
+              id="eligibilityNotes"
+              value={formData.eligibilityNotes}
+              onChange={(e) => setFormData(prev => ({ ...prev, eligibilityNotes: e.target.value }))}
+              placeholder="Notes about eligibility status..."
               rows={2}
             />
           </div>

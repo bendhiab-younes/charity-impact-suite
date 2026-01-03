@@ -31,7 +31,7 @@ export function AddRuleModal({ open, onOpenChange, onSuccess }: AddRuleModalProp
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: 'frequency',
+    type: 'FREQUENCY',
     value: '',
     unit: 'days',
     isActive: true,
@@ -41,7 +41,7 @@ export function AddRuleModal({ open, onOpenChange, onSuccess }: AddRuleModalProp
     setFormData({
       name: '',
       description: '',
-      type: 'frequency',
+      type: 'FREQUENCY',
       value: '',
       unit: 'days',
       isActive: true,
@@ -55,8 +55,8 @@ export function AddRuleModal({ open, onOpenChange, onSuccess }: AddRuleModalProp
       return;
     }
 
-    if (!formData.name || !formData.value) {
-      toast.error('Name and value are required');
+    if (!formData.name || !formData.value || !formData.description) {
+      toast.error('Name, description, and value are required');
       return;
     }
 
@@ -65,7 +65,7 @@ export function AddRuleModal({ open, onOpenChange, onSuccess }: AddRuleModalProp
       await api.createRule({
         associationId: user.associationId,
         name: formData.name,
-        description: formData.description || undefined,
+        description: formData.description,
         type: formData.type,
         value: parseFloat(formData.value),
         unit: formData.unit,
@@ -84,17 +84,17 @@ export function AddRuleModal({ open, onOpenChange, onSuccess }: AddRuleModalProp
 
   const getUnitOptions = () => {
     switch (formData.type) {
-      case 'frequency':
+      case 'FREQUENCY':
         return [
           { value: 'days', label: 'Days' },
           { value: 'weeks', label: 'Weeks' },
           { value: 'months', label: 'Months' },
         ];
-      case 'amount':
+      case 'AMOUNT':
         return [
           { value: 'currency', label: 'TND (Currency)' },
         ];
-      case 'eligibility':
+      case 'ELIGIBILITY':
         return [
           { value: 'members', label: 'Family Members' },
           { value: 'score', label: 'Eligibility Score' },
@@ -130,15 +130,15 @@ export function AddRuleModal({ open, onOpenChange, onSuccess }: AddRuleModalProp
             <Label htmlFor="type">Rule Type *</Label>
             <Select
               value={formData.type}
-              onValueChange={(v) => setFormData(prev => ({ ...prev, type: v, unit: v === 'amount' ? 'currency' : 'days' }))}
+              onValueChange={(v) => setFormData(prev => ({ ...prev, type: v, unit: v === 'AMOUNT' ? 'currency' : 'days' }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select rule type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="frequency">Frequency (Time-based)</SelectItem>
-                <SelectItem value="amount">Amount (Value-based)</SelectItem>
-                <SelectItem value="eligibility">Eligibility (Criteria-based)</SelectItem>
+                <SelectItem value="FREQUENCY">Frequency (Time-based)</SelectItem>
+                <SelectItem value="AMOUNT">Amount (Value-based)</SelectItem>
+                <SelectItem value="ELIGIBILITY">Eligibility (Criteria-based)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -178,7 +178,7 @@ export function AddRuleModal({ open, onOpenChange, onSuccess }: AddRuleModalProp
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"
               value={formData.description}

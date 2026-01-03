@@ -29,18 +29,14 @@ export function AddFamilyModal({ open, onOpenChange, onSuccess }: AddFamilyModal
   const [formData, setFormData] = useState({
     name: '',
     address: '',
-    phone: '',
     memberCount: '',
-    notes: '',
   });
 
   const resetForm = () => {
     setFormData({
       name: '',
       address: '',
-      phone: '',
       memberCount: '',
-      notes: '',
     });
   };
 
@@ -62,9 +58,7 @@ export function AddFamilyModal({ open, onOpenChange, onSuccess }: AddFamilyModal
         associationId: user.associationId,
         name: formData.name,
         address: formData.address || undefined,
-        phone: formData.phone || undefined,
-        memberCount: formData.memberCount ? parseInt(formData.memberCount) : undefined,
-        notes: formData.notes || undefined,
+        memberCount: formData.memberCount ? parseInt(formData.memberCount) : 1,
       });
       toast.success('Family registered successfully');
       resetForm();
@@ -99,27 +93,16 @@ export function AddFamilyModal({ open, onOpenChange, onSuccess }: AddFamilyModal
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="+216 XX XXX XXX"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="memberCount">Members</Label>
-              <Input
-                id="memberCount"
-                type="number"
-                min="1"
-                value={formData.memberCount}
-                onChange={(e) => setFormData(prev => ({ ...prev, memberCount: e.target.value }))}
-                placeholder="Number of members"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="memberCount">Number of Members</Label>
+            <Input
+              id="memberCount"
+              type="number"
+              min="1"
+              value={formData.memberCount}
+              onChange={(e) => setFormData(prev => ({ ...prev, memberCount: e.target.value }))}
+              placeholder="e.g., 4"
+            />
           </div>
 
           <div className="space-y-2">
@@ -129,17 +112,6 @@ export function AddFamilyModal({ open, onOpenChange, onSuccess }: AddFamilyModal
               value={formData.address}
               onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
               placeholder="Full address"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Additional notes about the family..."
-              rows={2}
             />
           </div>
 

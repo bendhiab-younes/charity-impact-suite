@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useUsers } from "@/hooks/useUsers";
+import { AddUserModal } from "@/components/modals/AddUserModal";
 import { Users, Plus, MoreHorizontal, Shield, Loader2 } from "lucide-react";
 
 
@@ -15,7 +17,8 @@ const roleLabels: Record<string, string> = {
 };
 
 const UsersManagement = () => {
-  const { users, isLoading, stats } = useUsers();
+  const { users, isLoading, stats, refetch } = useUsers();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -35,9 +38,9 @@ const UsersManagement = () => {
             <h1 className="text-2xl font-bold text-foreground">Users</h1>
             <p className="text-muted-foreground">Manage team members and their access</p>
           </div>
-          <Button>
+          <Button onClick={() => setIsModalOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Invite User
+            Add User
           </Button>
         </div>
 
@@ -130,6 +133,12 @@ const UsersManagement = () => {
           </CardContent>
         </Card>
       </div>
+
+      <AddUserModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onSuccess={refetch}
+      />
     </DashboardLayout>
   );
 };

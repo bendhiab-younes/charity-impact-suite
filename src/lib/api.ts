@@ -190,6 +190,10 @@ class ApiClient {
   async updateUser(id: string, data: any) {
     return this.request<any>(`/users/${id}`, { method: 'PUT', body: data });
   }
+
+  async createUser(data: { email: string; password: string; name: string; role?: string; associationId?: string }) {
+    return this.request<any>('/users', { method: 'POST', body: data });
+  }
 }
 
 export const api = new ApiClient();

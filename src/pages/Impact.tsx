@@ -117,47 +117,46 @@ const Impact = () => {
             <div className="grid md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">By Aid Type</CardTitle>
+                  <CardTitle className="text-lg">By Donation Type</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {[
-                    { type: "Food Assistance", pct: 42 },
-                    { type: "Financial Aid", pct: 28 },
-                    { type: "Medical Support", pct: 18 },
-                    { type: "Education", pct: 12 },
-                  ].map((item) => (
-                    <div key={item.type}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-muted-foreground">{item.type}</span>
-                        <span className="font-medium">{item.pct}%</span>
+                  {stats.distributionByType.length > 0 ? (
+                    stats.distributionByType.map((item) => (
+                      <div key={item.label}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-muted-foreground">{item.label}</span>
+                          <span className="font-medium">{item.pct}%</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full" style={{ width: `${item.pct}%` }} />
+                        </div>
                       </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full" style={{ width: `${item.pct}%` }} />
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No donation data available</p>
+                  )}
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">By Region</CardTitle>
+                  <CardTitle className="text-lg">By Association Category</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {[
-                    { region: "Urban Areas", pct: 55 },
-                    { region: "Suburban", pct: 25 },
-                    { region: "Rural Communities", pct: 20 },
-                  ].map((item) => (
-                    <div key={item.region}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-muted-foreground">{item.region}</span>
-                        <span className="font-medium">{item.pct}%</span>
+                  {stats.distributionByCategory.length > 0 ? (
+                    stats.distributionByCategory.map((item) => (
+                      <div key={item.label}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-muted-foreground">{item.label}</span>
+                          <span className="font-medium">{item.pct}%</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-accent rounded-full" style={{ width: `${item.pct}%` }} />
+                        </div>
                       </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-accent rounded-full" style={{ width: `${item.pct}%` }} />
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No category data available</p>
+                  )}
                 </CardContent>
               </Card>
             </div>
