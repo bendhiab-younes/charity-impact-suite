@@ -128,6 +128,10 @@ class ApiClient {
     return this.request<{ isEligible: boolean }>(`/families/${id}/cooldown?days=${days}`);
   }
 
+  async deleteFamily(id: string) {
+    return this.request<any>(`/families/${id}`, { method: 'DELETE' });
+  }
+
   // Donations
   async getDonations(associationId: string, status?: string) {
     const query = status 
@@ -177,10 +181,18 @@ class ApiClient {
     return this.request<any>(`/rules/${id}/toggle`, { method: 'PATCH' });
   }
 
+  async deleteRule(id: string) {
+    return this.request<any>(`/rules/${id}`, { method: 'DELETE' });
+  }
+
   // Users
   async getUsers(associationId?: string) {
     const query = associationId ? `?associationId=${associationId}` : '';
     return this.request<any[]>(`/users${query}`);
+  }
+
+  async getUser(id: string) {
+    return this.request<any>(`/users/${id}`);
   }
 
   async deleteUser(id: string) {

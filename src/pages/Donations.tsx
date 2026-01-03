@@ -22,10 +22,23 @@ export default function DonationsPage() {
   const canApprove = userRole === 'ASSOCIATION_ADMIN' || userRole === 'SUPER_ADMIN';
   const isDonor = userRole === 'DONOR';
   
-  // Filter donations for donors to only show their own
-  const filteredDonations = isDonor 
-    ? donations.filter(d => d.donorId === user?.id)
-    : donations;
+  // Filter donations by role and search query
+  const filteredDonations = donations.filter(d => {
+    // Role filter: donors only see their own
+    if (isDonor && d.donorId !== user?.id) return false;
+    
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesBeneficiary = d.beneficiary?.firstName?.toLowerCase().includes(query) ||
+        d.beneficiary?.lastName?.toLowerCase().includes(query);
+      const matchesDonor = d.donor?.name?.toLowerCase().includes(query);
+      const matchesAmount = d.amount?.toString().includes(query);
+      const matchesStatus = d.status?.toLowerCase().includes(query);
+      return matchesBeneficiary || matchesDonor || matchesAmount || matchesStatus;
+    }
+    return true;
+  });
 
   if (isLoading) {
     return (

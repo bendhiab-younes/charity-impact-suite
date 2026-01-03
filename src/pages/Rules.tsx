@@ -6,24 +6,39 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useRules } from '@/hooks/useRules';
 import { AddRuleModal } from '@/components/modals/AddRuleModal';
+import { EditRuleModal } from '@/components/modals/EditRuleModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Edit, Trash2, Clock, DollarSign, Users, Loader2 } from 'lucide-react';
 
 export default function RulesPage() {
-  const { rules, isLoading, toggleRule, refetch } = useRules();
+  const { rules, isLoading, toggleRule, deleteRule, refetch } = useRules();
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const userRole = user?.role?.toUpperCase();
   const canEdit = userRole === 'ASSOCIATION_ADMIN' || userRole === 'SUPER_ADMIN';
 
+  const handleEditRule = (id: string) => {
+    setSelectedRuleId(id);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteRule = async (id: string, name: string) => {
+    if (confirm(`Are you sure you want to delete the rule "${name}"?`)) {
+      await deleteRule(id);
+    }
+  };
+
   const getRuleIcon = (type: string) => {
-    switch (type) {
-      case 'frequency':
+    const t = type?.toUpperCase();
+    switch (t) {
+      case 'FREQUENCY':
         return Clock;
-      case 'amount':
+      case 'AMOUNT':
         return DollarSign;
-      case 'eligibility':
+      case 'ELIGIBILITY':
         return Users;
       default:
         return Clock;
@@ -114,11 +129,21 @@ export default function RulesPage() {
                 <CardFooter className="pt-3 border-t border-border">
                   {canEdit && (
                     <div className="flex items-center gap-2 w-full">
-                      <Button variant="ghost" size="sm" className="flex-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleEditRule(rule.id)}
+                      >
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteRule(rule.id, rule.name)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -151,6 +176,13 @@ export default function RulesPage() {
       <AddRuleModal 
         open={isModalOpen} 
         onOpenChange={setIsModalOpen}
+        onSuccess={refetch}
+      />
+
+      <EditRuleModal
+        ruleId={selectedRuleId}
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
         onSuccess={refetch}
       />
     </DashboardLayout>

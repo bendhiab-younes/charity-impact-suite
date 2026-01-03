@@ -45,6 +45,16 @@ export function useRules() {
     }
   };
 
+  const deleteRule = async (id: string) => {
+    try {
+      await api.deleteRule(id);
+      setRules(prev => prev.filter(r => r.id !== id));
+      toast.success('Rule deleted successfully');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete rule');
+    }
+  };
+
   const activeCount = rules.filter(r => r.isActive).length;
   const inactiveCount = rules.filter(r => !r.isActive).length;
 
@@ -55,6 +65,7 @@ export function useRules() {
     activeCount,
     inactiveCount,
     toggleRule,
+    deleteRule,
     refetch: fetchRules,
   };
 }

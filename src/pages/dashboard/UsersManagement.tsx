@@ -6,10 +6,24 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useUsers } from "@/hooks/useUsers";
 import { AddUserModal } from "@/components/modals/AddUserModal";
-import { Users, Plus, MoreHorizontal, Shield, Loader2 } from "lucide-react";
+import { UserDetailModal } from "@/components/modals/UserDetailModal";
+import { Users, Plus, MoreHorizontal, Shield, Loader2, Search, Eye, Edit, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 
 const roleLabels: Record<string, string> = {
+  SUPER_ADMIN: "Super Admin",
+  ASSOCIATION_ADMIN: "Admin",
+  ASSOCIATION_MEMBER: "Member",
+  DONOR: "Donor",
   super_admin: "Super Admin",
   association_admin: "Admin",
   association_member: "Member",
@@ -17,8 +31,46 @@ const roleLabels: Record<string, string> = {
 };
 
 const UsersManagement = () => {
-  const { users, isLoading, stats, refetch } = useUsers();
+  const { users, isLoading, stats, refetch, deleteUser } = useUsers();
+  const { user: currentUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [detailModalMode, setDetailModalMode] = useState<'view' | 'edit'>('view');
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  const userRole = currentUser?.role?.toUpperCase();
+  const canEdit = userRole === 'ASSOCIATION_ADMIN' || userRole === 'SUPER_ADMIN';
+
+  const handleView = (id: string) => {
+    setSelectedUserId(id);
+    setDetailModalMode('view');
+    setIsDetailModalOpen(true);
+  };
+
+  const handleEdit = (id: string) => {
+    setSelectedUserId(id);
+    setDetailModalMode('edit');
+    setIsDetailModalOpen(true);
+  };
+
+  // Filter users by search and role
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = roleFilter === 'all' || user.role?.toUpperCase() === roleFilter;
+    return matchesSearch && matchesRole;
+  });
+
+  const handleDelete = async (id: string, name: string) => {
+    if (id === currentUser?.id) {
+      return; // Can't delete yourself
+    }
+    if (confirm(`Are you sure you want to delete "${name}"?`)) {
+      await deleteUser(id);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -42,6 +94,49 @@ const UsersManagement = () => {
             <Plus className="h-4 w-4 mr-2" />
             Add User
           </Button>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search users..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant={roleFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRoleFilter('all')}
+            >
+              All
+            </Button>
+            <Button
+              variant={roleFilter === 'ASSOCIATION_ADMIN' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRoleFilter('ASSOCIATION_ADMIN')}
+            >
+              Admins
+            </Button>
+            <Button
+              variant={roleFilter === 'ASSOCIATION_MEMBER' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRoleFilter('ASSOCIATION_MEMBER')}
+            >
+              Members
+            </Button>
+            <Button
+              variant={roleFilter === 'DONOR' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRoleFilter('DONOR')}
+            >
+              Donors
+            </Button>
+          </div>
         </div>
 
         <div className="grid sm:grid-cols-4 gap-4 mb-8">
@@ -88,8 +183,8 @@ const UsersManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.length > 0 ? (
-                  users.map((user) => (
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -115,9 +210,39 @@ const UsersManagement = () => {
                         {new Date(user.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleView(user.id)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Profile
+                            </DropdownMenuItem>
+                            {canEdit && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleEdit(user.id)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit User
+                                </DropdownMenuItem>
+                                {user.id !== currentUser?.id && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onClick={() => handleDelete(user.id, user.name)}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))
@@ -137,6 +262,14 @@ const UsersManagement = () => {
       <AddUserModal
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
+        onSuccess={refetch}
+      />
+
+      <UserDetailModal
+        userId={selectedUserId}
+        open={isDetailModalOpen}
+        onOpenChange={setIsDetailModalOpen}
+        mode={detailModalMode}
         onSuccess={refetch}
       />
     </DashboardLayout>

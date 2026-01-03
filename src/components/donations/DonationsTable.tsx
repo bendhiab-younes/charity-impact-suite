@@ -8,7 +8,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useState } from 'react';
 import { Eye, Check, X, MoreHorizontal } from 'lucide-react';
+import { DonationDetailModal } from '@/components/modals/DonationDetailModal';
 import { Donation } from '@/types';
 import {
   DropdownMenu,
@@ -25,6 +27,13 @@ interface DonationsTableProps {
 }
 
 export function DonationsTable({ donations, showActions = true, onApprove, onReject }: DonationsTableProps) {
+  const [selectedDonationId, setSelectedDonationId] = useState<string | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  const handleViewDetails = (id: string) => {
+    setSelectedDonationId(id);
+    setIsDetailModalOpen(true);
+  };
   const statusVariant: Record<string, string> = {
     pending: 'warning',
     approved: 'info',
@@ -115,7 +124,7 @@ export function DonationsTable({ donations, showActions = true, onApprove, onRej
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewDetails(donation.id)}>
                           <Eye className="h-4 w-4 mr-2" />
                           View Details
                         </DropdownMenuItem>
@@ -128,6 +137,12 @@ export function DonationsTable({ donations, showActions = true, onApprove, onRej
           ))}
         </TableBody>
       </Table>
+
+      <DonationDetailModal
+        donationId={selectedDonationId}
+        open={isDetailModalOpen}
+        onOpenChange={setIsDetailModalOpen}
+      />
     </div>
   );
 }

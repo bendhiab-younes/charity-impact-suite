@@ -42,6 +42,16 @@ export function useFamilies() {
     }
   };
 
+  const deleteFamily = async (id: string) => {
+    try {
+      await api.deleteFamily(id);
+      setFamilies(prev => prev.filter(f => f.id !== id));
+      toast.success('Family deleted successfully');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete family');
+    }
+  };
+
   const eligibleCount = families.filter(f => f.status === 'ELIGIBLE').length;
   const cooldownCount = families.filter(f => f.status === 'COOLDOWN').length;
   const totalMembers = families.reduce((sum, f) => sum + (f.memberCount || 0), 0);
@@ -54,6 +64,7 @@ export function useFamilies() {
     cooldownCount,
     totalMembers,
     checkCooldown,
+    deleteFamily,
     refetch: fetchFamilies,
   };
 }

@@ -4,20 +4,60 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserCircle, Plus, MoreHorizontal, Users, Loader2, Download } from "lucide-react";
+import { UserCircle, Plus, MoreHorizontal, Users, Loader2, Download, Search, Eye, Edit, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useFamilies } from "@/hooks/useFamilies";
 import { AddFamilyModal } from "@/components/modals/AddFamilyModal";
+import { FamilyDetailModal } from "@/components/modals/FamilyDetailModal";
 import { exportFamilies } from "@/lib/export";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const FamiliesManagement = () => {
-  const { families, isLoading, eligibleCount, cooldownCount, totalMembers, refetch } = useFamilies();
+  const { families, isLoading, eligibleCount, cooldownCount, totalMembers, refetch, deleteFamily } = useFamilies();
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
+  const [detailModalMode, setDetailModalMode] = useState<'view' | 'edit'>('view');
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const userRole = user?.role?.toUpperCase();
   const canEdit = userRole === 'ASSOCIATION_ADMIN' || userRole === 'SUPER_ADMIN';
+
+  const handleView = (id: string) => {
+    setSelectedFamilyId(id);
+    setDetailModalMode('view');
+    setIsDetailModalOpen(true);
+  };
+
+  const handleEdit = (id: string) => {
+    setSelectedFamilyId(id);
+    setDetailModalMode('edit');
+    setIsDetailModalOpen(true);
+  };
+
+  // Filter families by search and status
+  const filteredFamilies = families.filter(family => {
+    const matchesSearch = family.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      family.address?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || family.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleDelete = async (id: string, name: string) => {
+    if (confirm(`Are you sure you want to delete "${name}"?`)) {
+      await deleteFamily(id);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -55,6 +95,42 @@ const FamiliesManagement = () => {
                 Register Family
               </Button>
             )}
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search families..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={statusFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('all')}
+            >
+              All
+            </Button>
+            <Button
+              variant={statusFilter === 'ELIGIBLE' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('ELIGIBLE')}
+            >
+              Eligible
+            </Button>
+            <Button
+              variant={statusFilter === 'COOLDOWN' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('COOLDOWN')}
+            >
+              Cooldown
+            </Button>
           </div>
         </div>
 
@@ -123,7 +199,7 @@ const FamiliesManagement = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  families.map((family) => (
+                  filteredFamilies.map((family) => (
                     <TableRow key={family.id}>
                       <TableCell className="font-medium">{family.name}</TableCell>
                       <TableCell>{family.memberCount || 0}</TableCell>
@@ -137,9 +213,35 @@ const FamiliesManagement = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleView(family.id)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            {canEdit && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleEdit(family.id)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit Family
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleDelete(family.id, family.name)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))
@@ -153,6 +255,14 @@ const FamiliesManagement = () => {
       <AddFamilyModal 
         open={isModalOpen} 
         onOpenChange={setIsModalOpen}
+        onSuccess={refetch}
+      />
+
+      <FamilyDetailModal
+        familyId={selectedFamilyId}
+        open={isDetailModalOpen}
+        onOpenChange={setIsDetailModalOpen}
+        mode={detailModalMode}
         onSuccess={refetch}
       />
     </DashboardLayout>
