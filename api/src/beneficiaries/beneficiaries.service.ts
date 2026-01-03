@@ -34,6 +34,10 @@ export class BeneficiariesService {
   }
 
   async update(id: string, dto: UpdateBeneficiaryDto) {
+    const beneficiary = await this.prisma.beneficiary.findUnique({ where: { id } });
+    if (!beneficiary) {
+      throw new NotFoundException('Beneficiary not found');
+    }
     return this.prisma.beneficiary.update({
       where: { id },
       data: dto,
@@ -42,6 +46,10 @@ export class BeneficiariesService {
   }
 
   async updateStatus(id: string, status: string) {
+    const beneficiary = await this.prisma.beneficiary.findUnique({ where: { id } });
+    if (!beneficiary) {
+      throw new NotFoundException('Beneficiary not found');
+    }
     return this.prisma.beneficiary.update({
       where: { id },
       data: { status: status as any },
@@ -49,6 +57,10 @@ export class BeneficiariesService {
   }
 
   async delete(id: string) {
+    const beneficiary = await this.prisma.beneficiary.findUnique({ where: { id } });
+    if (!beneficiary) {
+      throw new NotFoundException('Beneficiary not found');
+    }
     return this.prisma.beneficiary.delete({ where: { id } });
   }
 }

@@ -27,6 +27,7 @@ export class RulesService {
   }
 
   async update(id: string, dto: UpdateRuleDto) {
+    await this.findOne(id); // Check if exists
     return this.prisma.donationRule.update({
       where: { id },
       data: dto,
@@ -42,6 +43,7 @@ export class RulesService {
   }
 
   async delete(id: string) {
+    await this.findOne(id); // Check if exists
     return this.prisma.donationRule.delete({ where: { id } });
   }
 }

@@ -39,6 +39,10 @@ export class FamiliesService {
   }
 
   async update(id: string, dto: UpdateFamilyDto) {
+    const family = await this.prisma.family.findUnique({ where: { id } });
+    if (!family) {
+      throw new NotFoundException('Family not found');
+    }
     return this.prisma.family.update({
       where: { id },
       data: dto,
@@ -57,6 +61,10 @@ export class FamiliesService {
   }
 
   async delete(id: string) {
+    const family = await this.prisma.family.findUnique({ where: { id } });
+    if (!family) {
+      throw new NotFoundException('Family not found');
+    }
     return this.prisma.family.delete({ where: { id } });
   }
 }

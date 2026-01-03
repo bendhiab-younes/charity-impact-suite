@@ -10,7 +10,7 @@ export function useAssociations() {
     const fetchAssociations = async () => {
       try {
         const data = await api.getAssociations();
-        setAssociations(data);
+        setAssociations(Array.isArray(data) ? data : []);
       } catch (err: any) {
         setError(err.message);
       } finally {

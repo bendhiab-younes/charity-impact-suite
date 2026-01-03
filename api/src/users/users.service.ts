@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from '../auth/dto/register.dto';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -46,6 +46,10 @@ export class UsersService {
   }
 
   async update(id: string, data: Partial<RegisterDto>) {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
     return this.prisma.user.update({
       where: { id },
       data,
@@ -53,6 +57,10 @@ export class UsersService {
   }
 
   async delete(id: string) {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
     return this.prisma.user.delete({ where: { id } });
   }
 

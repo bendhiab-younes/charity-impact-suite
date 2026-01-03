@@ -37,7 +37,7 @@ export function useUsers() {
 
   useEffect(() => {
     fetchUsers();
-  }, [user?.id]);
+  }, [user?.id, user?.role, user?.associationId]);
 
   const deleteUser = async (userId: string) => {
     try {
