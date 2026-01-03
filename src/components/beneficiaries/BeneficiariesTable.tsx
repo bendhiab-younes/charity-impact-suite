@@ -22,20 +22,29 @@ interface BeneficiariesTableProps {
   beneficiaries: Beneficiary[];
   onView?: (id: string) => void;
   onEdit?: (id: string) => void;
+  onUpdateStatus?: (id: string, status: string) => void;
 }
 
-export function BeneficiariesTable({ beneficiaries, onView, onEdit }: BeneficiariesTableProps) {
-  const statusVariant = {
-    eligible: 'success',
-    ineligible: 'destructive',
-    pending_review: 'warning',
-  } as const;
+export function BeneficiariesTable({ beneficiaries, onView, onEdit, onUpdateStatus }: BeneficiariesTableProps) {
+  const getStatusVariant = (status: string) => {
+    const s = status?.toUpperCase();
+    if (s === 'ELIGIBLE') return 'success';
+    if (s === 'INELIGIBLE') return 'destructive';
+    if (s === 'PENDING_REVIEW') return 'warning';
+    return 'secondary';
+  };
 
-  const statusLabel = {
-    eligible: 'Eligible',
-    ineligible: 'Ineligible',
-    pending_review: 'Pending Review',
-  } as const;
+  const getStatusLabel = (status: string) => {
+    const s = status?.toUpperCase();
+    if (s === 'ELIGIBLE') return 'Eligible';
+    if (s === 'INELIGIBLE') return 'Ineligible';
+    if (s === 'PENDING_REVIEW') return 'Pending Review';
+    return status;
+  };
+
+  const isPendingReview = (status: string) => {
+    return status?.toUpperCase() === 'PENDING_REVIEW';
+  };
 
   const formatDate = (date?: string) => {
     if (!date) return '—';
@@ -80,8 +89,8 @@ export function BeneficiariesTable({ beneficiaries, onView, onEdit }: Beneficiar
                 </div>
               </TableCell>
               <TableCell>
-                <Badge variant={statusVariant[beneficiary.status]}>
-                  {statusLabel[beneficiary.status]}
+                <Badge variant={getStatusVariant(beneficiary.status) as any}>
+                  {getStatusLabel(beneficiary.status)}
                 </Badge>
               </TableCell>
               <TableCell className="text-sm">
@@ -107,13 +116,19 @@ export function BeneficiariesTable({ beneficiaries, onView, onEdit }: Beneficiar
                       Edit Details
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    {beneficiary.status === 'pending_review' && (
+                    {isPendingReview(beneficiary.status) && onUpdateStatus && (
                       <>
-                        <DropdownMenuItem className="text-success">
+                        <DropdownMenuItem 
+                          className="text-success"
+                          onClick={() => onUpdateStatus(beneficiary.id, 'ELIGIBLE')}
+                        >
                           <UserCheck className="h-4 w-4 mr-2" />
                           Mark Eligible
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => onUpdateStatus(beneficiary.id, 'INELIGIBLE')}
+                        >
                           <UserX className="h-4 w-4 mr-2" />
                           Mark Ineligible
                         </DropdownMenuItem>

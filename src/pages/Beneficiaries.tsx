@@ -8,16 +8,32 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBeneficiaries } from '@/hooks/useBeneficiaries';
 import { AddBeneficiaryModal } from '@/components/modals/AddBeneficiaryModal';
+import { BeneficiaryDetailModal } from '@/components/modals/BeneficiaryDetailModal';
 import { exportBeneficiaries } from '@/lib/export';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Search, Filter, Download, UserPlus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function BeneficiariesPage() {
-  const { beneficiaries, isLoading, eligibleCount, pendingCount, refetch } = useBeneficiaries();
+  const { beneficiaries, isLoading, eligibleCount, pendingCount, refetch, updateStatus } = useBeneficiaries();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState<string | null>(null);
+  const [detailModalMode, setDetailModalMode] = useState<'view' | 'edit'>('view');
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  const handleView = (id: string) => {
+    setSelectedBeneficiaryId(id);
+    setDetailModalMode('view');
+    setIsDetailModalOpen(true);
+  };
+
+  const handleEdit = (id: string) => {
+    setSelectedBeneficiaryId(id);
+    setDetailModalMode('edit');
+    setIsDetailModalOpen(true);
+  };
 
   const userRole = user?.role?.toUpperCase();
   const canEdit = userRole === 'ASSOCIATION_ADMIN' || userRole === 'SUPER_ADMIN';
@@ -103,7 +119,12 @@ export default function BeneficiariesPage() {
           <TabsContent value="all">
             <Card>
               <CardContent className="p-0">
-                <BeneficiariesTable beneficiaries={beneficiaries} />
+                <BeneficiariesTable 
+                  beneficiaries={beneficiaries}
+                  onView={handleView}
+                  onEdit={canEdit ? handleEdit : undefined}
+                  onUpdateStatus={canEdit ? updateStatus : undefined}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -112,7 +133,10 @@ export default function BeneficiariesPage() {
             <Card>
               <CardContent className="p-0">
                 <BeneficiariesTable 
-                  beneficiaries={beneficiaries.filter(b => b.status === 'ELIGIBLE')} 
+                  beneficiaries={beneficiaries.filter(b => b.status === 'ELIGIBLE')}
+                  onView={handleView}
+                  onEdit={canEdit ? handleEdit : undefined}
+                  onUpdateStatus={canEdit ? updateStatus : undefined}
                 />
               </CardContent>
             </Card>
@@ -122,7 +146,10 @@ export default function BeneficiariesPage() {
             <Card>
               <CardContent className="p-0">
                 <BeneficiariesTable 
-                  beneficiaries={beneficiaries.filter(b => b.status === 'PENDING_REVIEW')} 
+                  beneficiaries={beneficiaries.filter(b => b.status === 'PENDING_REVIEW')}
+                  onView={handleView}
+                  onEdit={canEdit ? handleEdit : undefined}
+                  onUpdateStatus={canEdit ? updateStatus : undefined}
                 />
               </CardContent>
             </Card>
@@ -133,6 +160,14 @@ export default function BeneficiariesPage() {
       <AddBeneficiaryModal 
         open={isModalOpen} 
         onOpenChange={setIsModalOpen}
+        onSuccess={refetch}
+      />
+
+      <BeneficiaryDetailModal
+        beneficiaryId={selectedBeneficiaryId}
+        open={isDetailModalOpen}
+        onOpenChange={setIsDetailModalOpen}
+        mode={detailModalMode}
         onSuccess={refetch}
       />
     </DashboardLayout>
