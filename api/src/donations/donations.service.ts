@@ -44,27 +44,70 @@ export class DonationsService {
   }
 
   async create(dto: CreateDonationDto) {
-    // Check cooldown if familyId is provided
-    if (dto.familyId) {
-      const rules = await this.rulesService.findByAssociation(dto.associationId);
-      const cooldownRule = rules.find(
-        (r) => r.type === 'FREQUENCY' && r.isActive,
-      );
+    // Get familyId from beneficiary if not provided directly
+    let familyId = dto.familyId;
+    if (!familyId && dto.beneficiaryId) {
+      const beneficiary = await this.prisma.beneficiary.findUnique({
+        where: { id: dto.beneficiaryId },
+        select: { familyId: true },
+      });
+      if (beneficiary) {
+        familyId = beneficiary.familyId;
+      }
+    }
+
+    // Get all active rules for this association
+    const rules = await this.rulesService.findByAssociation(dto.associationId);
+    const activeRules = rules.filter((r) => r.isActive);
+
+    // Check FREQUENCY rule (cooldown)
+    if (familyId) {
+      const cooldownRule = activeRules.find((r) => r.type === 'FREQUENCY');
       if (cooldownRule) {
         const isEligible = await this.familiesService.checkCooldown(
-          dto.familyId,
+          familyId,
           cooldownRule.value,
         );
         if (!isEligible) {
           throw new BadRequestException(
-            `Family is in cooldown period. Wait ${cooldownRule.value} days between donations.`,
+            `Family is in cooldown period. Wait ${cooldownRule.value} ${cooldownRule.unit || 'days'} between donations.`,
           );
         }
       }
     }
 
+    // Check AMOUNT rule (max donation amount)
+    const amountRule = activeRules.find((r) => r.type === 'AMOUNT');
+    if (amountRule && dto.amount > amountRule.value) {
+      throw new BadRequestException(
+        `Donation amount exceeds maximum allowed (${amountRule.value} ${amountRule.unit || 'TND'}).`,
+      );
+    }
+
+    // Check ELIGIBILITY rule (minimum family members)
+    if (familyId) {
+      const eligibilityRule = activeRules.find((r) => r.type === 'ELIGIBILITY');
+      if (eligibilityRule && eligibilityRule.unit === 'members') {
+        const family = await this.prisma.family.findUnique({
+          where: { id: familyId },
+          select: { memberCount: true },
+        });
+        if (family && family.memberCount < eligibilityRule.value) {
+          throw new BadRequestException(
+            `Family does not meet minimum member requirement (${eligibilityRule.value} members).`,
+          );
+        }
+      }
+    }
+
+    // Include familyId in the donation data if resolved from beneficiary
+    const donationData = {
+      ...dto,
+      familyId: familyId || dto.familyId,
+    };
+
     return this.prisma.donation.create({
-      data: dto,
+      data: donationData,
       include: { beneficiary: true, family: true },
     });
   }
