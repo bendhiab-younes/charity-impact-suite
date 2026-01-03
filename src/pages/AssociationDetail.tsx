@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Header, Footer } from '@/components/layout/PublicLayout';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { 
   Building2, 
   MapPin, 
@@ -27,6 +29,8 @@ import {
 
 export default function AssociationDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [association, setAssociation] = useState<any>(null);
   const [donations, setDonations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -179,10 +183,35 @@ export default function AssociationDetailPage() {
                     <p className="text-2xl font-bold">{stats.averageDonation} TND</p>
                     <p className="text-sm text-muted-foreground">Average donation</p>
                   </div>
-                  <Button variant="hero" size="lg" className="w-full mb-3">
+                  <Button 
+                    variant="hero" 
+                    size="lg" 
+                    className="w-full mb-3"
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        toast.info('Please sign in to make a donation');
+                        navigate('/auth?redirect=' + encodeURIComponent(`/associations/${id}`));
+                      } else if (user?.associationId === id) {
+                        navigate('/dashboard/donations/new');
+                      } else {
+                        toast.info('Contact this association directly to donate');
+                      }
+                    }}
+                  >
                     Donate Now
                   </Button>
-                  <Button variant="outline" className="w-full">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        toast.info('Please sign in to set up monthly giving');
+                        navigate('/auth?redirect=' + encodeURIComponent(`/associations/${id}`));
+                      } else {
+                        toast.info('Monthly giving coming soon!');
+                      }
+                    }}
+                  >
                     Set Up Monthly Giving
                   </Button>
                   <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
