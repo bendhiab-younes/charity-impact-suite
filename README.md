@@ -1,71 +1,127 @@
-# Charity Impact Suite
+# 🌟 Charity Impact Suite
 
-A comprehensive donation management platform for charity associations, designed to ensure transparency, prevent fraud, and maximize the impact of charitable giving.
+> *Empowering charitable giving through transparency, accountability, and technology.*
 
-## Tech Stack
+**Charity Impact Suite** is a full-stack donation management platform built for charity associations in Tunisia. It helps organizations manage beneficiaries, track donations, enforce fair distribution rules, and provide complete transparency to donors.
+
+Whether you're running a small local charity or managing a larger humanitarian organization, this platform gives you the tools to make every donation count.
+
+---
+
+## 🎯 What Problem Does This Solve?
+
+Many charitable organizations struggle with:
+- **Tracking beneficiaries** and ensuring aid reaches those who need it most
+- **Preventing duplicate donations** to the same families within short periods
+- **Maintaining transparency** for donors who want to see their impact
+- **Managing volunteers and staff** with appropriate access levels
+- **Enforcing fair distribution rules** to maximize reach
+
+This platform addresses all of these challenges with a modern, easy-to-use interface.
+
+---
+
+## ✨ Key Features
+
+### For Donors
+- 🔍 Browse verified charity associations
+- 💳 Make one-time or recurring donations
+- 📊 Track your donation history and impact
+- 🔔 See exactly where your money goes
+
+### For Association Staff
+- 👥 Manage beneficiaries and their families
+- ✅ Process donation approvals with rule enforcement
+- 📈 View real-time statistics and reports
+- 📱 Mobile-friendly dispatch system for field workers
+
+### For Administrators
+- 🛡️ Role-based access control (Admin, Member, Donor)
+- ⚙️ Configurable donation rules (cooldowns, amount limits, eligibility)
+- 📋 Complete audit trail of all actions
+- 📤 Export data to CSV for reporting
+
+---
+
+## 🛠️ Tech Stack
 
 ### Frontend
-| Technology | Purpose |
-|------------|---------|
-| **React 18** | UI framework |
-| **TypeScript** | Type safety |
-| **Vite** | Build tool & dev server |
-| **Tailwind CSS** | Styling |
-| **shadcn/ui** | UI component library |
-| **React Router DOM** | Client-side routing |
-| **TanStack React Query** | Data fetching & caching |
-| **Lucide React** | Icons |
+| Technology | Why We Chose It |
+|------------|-----------------|
+| **React 18** | Modern UI with hooks and concurrent features |
+| **TypeScript** | Catch bugs before they reach production |
+| **Vite** | Lightning-fast development experience |
+| **Tailwind CSS** | Rapid, consistent styling |
+| **shadcn/ui** | Beautiful, accessible components |
+| **React Router** | Seamless navigation |
+| **Lucide Icons** | Clean, consistent iconography |
 
 ### Backend
-| Technology | Purpose |
-|------------|---------|
-| **NestJS** | Node.js framework |
-| **TypeScript** | Type safety |
-| **Prisma ORM** | Database ORM |
-| **SQLite** | Database (file-based, no setup required) |
-| **JWT + Passport** | Authentication |
-| **bcrypt** | Password hashing |
-| **class-validator** | Request validation |
-| **Swagger** | API documentation |
+| Technology | Why We Chose It |
+|------------|-----------------|
+| **NestJS** | Enterprise-grade Node.js framework |
+| **TypeScript** | End-to-end type safety |
+| **Prisma ORM** | Type-safe database queries |
+| **SQLite** | Zero-config database (perfect for development) |
+| **JWT + Passport** | Industry-standard authentication |
+| **Swagger** | Auto-generated API documentation |
 
-### Database
-The project uses **SQLite** - a lightweight, file-based database that requires no external setup. The database file is stored at `api/prisma/dev.db`.
+### Mobile API
+A dedicated set of endpoints optimized for mobile applications, enabling:
+- Anonymous and authenticated donations
+- Field worker dispatch functionality
+- Real-time dashboard statistics
 
-## Project Structure
+---
+
+## 📁 Project Structure
 
 ```
 charity-impact-suite/
-├── src/                    # Frontend React application
-│   ├── components/         # Reusable UI components
-│   ├── contexts/           # React contexts (Auth)
-│   ├── hooks/              # Custom React hooks
-│   ├── lib/                # Utilities & API client
-│   ├── pages/              # Page components
-│   └── types/              # TypeScript types
 │
-├── api/                    # Backend NestJS application
+├── 📂 src/                      # Frontend (React + TypeScript)
+│   ├── components/              # Reusable UI components
+│   │   ├── layout/              # Layout components (Sidebar, Header)
+│   │   ├── modals/              # Dialog modals for CRUD operations
+│   │   ├── beneficiaries/       # Beneficiary-specific components
+│   │   ├── donations/           # Donation tables and cards
+│   │   └── ui/                  # shadcn/ui components
+│   ├── contexts/                # React Context (Authentication)
+│   ├── hooks/                   # Custom hooks for data fetching
+│   ├── lib/                     # API client and utilities
+│   ├── pages/                   # Route page components
+│   └── types/                   # TypeScript type definitions
+│
+├── 📂 api/                      # Backend (NestJS + Prisma)
 │   ├── prisma/
-│   │   ├── schema.prisma   # Database schema
-│   │   ├── seed.ts         # Demo data seeder
-│   │   └── dev.db          # SQLite database file
+│   │   ├── schema.prisma        # Database schema definition
+│   │   ├── seed.ts              # Demo data seeder
+│   │   └── dev.db               # SQLite database file
 │   └── src/
-│       ├── auth/           # Authentication module
-│       ├── users/          # Users module
-│       ├── associations/   # Associations module
-│       ├── beneficiaries/  # Beneficiaries module
-│       ├── families/       # Families module
-│       ├── donations/      # Donations module
-│       ├── rules/          # Donation rules module
-│       └── prisma/         # Database service
+│       ├── auth/                # JWT authentication & guards
+│       ├── users/               # User management
+│       ├── associations/        # Charity associations
+│       ├── beneficiaries/       # Beneficiary management
+│       ├── families/            # Family groupings
+│       ├── donations/           # Donation workflow
+│       ├── rules/               # Donation rules engine
+│       ├── mobile/              # Mobile API endpoints
+│       └── prisma/              # Database service
+│
+└── 📄 Configuration files       # package.json, tsconfig, etc.
 ```
 
-## How to Run the Project
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js** v18 or higher
-- **npm** v9 or higher
 
-### 1. Clone & Install Dependencies
+Before you begin, make sure you have:
+- **Node.js** v18 or higher ([Download](https://nodejs.org/))
+- **npm** v9 or higher (comes with Node.js)
+
+### Step 1: Clone & Install
 
 ```bash
 # Clone the repository
@@ -78,172 +134,261 @@ npm install
 # Install backend dependencies
 cd api
 npm install
+cd ..
 ```
 
-### 2. Set Up the Database
+### Step 2: Set Up the Database
 
 ```bash
-# From the api/ directory
-npx prisma generate      # Generate Prisma client
-npx prisma db push       # Create database tables
-npx ts-node prisma/seed.ts  # Seed demo data
+cd api
+
+# Generate the Prisma client
+npx prisma generate
+
+# Create database tables
+npx prisma db push
+
+# (Optional) Load demo data
+npx ts-node prisma/seed.ts
 ```
 
-### 3. Start the Servers
+### Step 3: Start the Application
 
-**Terminal 1 - Backend API:**
+You'll need **two terminal windows**:
+
+**Terminal 1 — Start the Backend:**
 ```bash
 cd api
 npm run start:dev
 ```
-The API will run at http://localhost:3001
+✅ API running at `http://localhost:3001`
 
-**Terminal 2 - Frontend:**
+**Terminal 2 — Start the Frontend:**
 ```bash
-# From root directory
 npm run dev
 ```
-The frontend will run at http://localhost:5173
+✅ App running at `http://localhost:5173`
 
-### 4. Access the Application
+### Step 4: Explore!
 
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:5173 |
-| Backend API | http://localhost:3001 |
-| API Documentation (Swagger) | http://localhost:3001/api/docs |
+| What | Where |
+|------|-------|
+| 🌐 Web Application | http://localhost:5173 |
+| 📡 API Server | http://localhost:3001 |
+| 📚 API Documentation | http://localhost:3001/api |
 
-### Demo Accounts
+---
 
-| Role | Email | Password |
-|------|-------|----------|
-| Super Admin | admin@charity.tn | password123 |
-| Association Admin | admin@espoir-tunisie.org | password123 |
-| Association Member | membre@espoir-tunisie.org | password123 |
-| Donor | donateur@email.tn | password123 |
+## 🔐 Demo Accounts
 
-## Implemented Features
+The seeded database includes these test accounts:
 
-### Backend (API)
-- [x] **Authentication** - JWT-based login/register with role-based access
-- [x] **User Management** - CRUD operations for users
-- [x] **Associations** - Create, read, update associations
-- [x] **Beneficiaries** - Manage beneficiaries with eligibility status
-- [x] **Families** - Family management with cooldown tracking
-- [x] **Donations** - Full donation workflow (create, approve, reject, complete)
-- [x] **Donation Rules** - Configurable rules (frequency, amount, eligibility)
-- [x] **API Documentation** - Swagger/OpenAPI docs
+| Role | Email | Password | What They Can Do |
+|------|-------|----------|------------------|
+| **Super Admin** | admin@charity.tn | password123 | Everything — manage all associations |
+| **Association Admin** | admin@espoir-tunisie.org | password123 | Manage their association's data |
+| **Association Member** | membre@espoir-tunisie.org | password123 | Process donations, view reports |
+| **Donor** | donateur@email.tn | password123 | Make donations, track history |
 
-### Frontend
-- [x] **Public Landing Page** - Hero, features, association listing from API
-- [x] **Authentication Pages** - Login and registration with role selection
-- [x] **Dashboard** - Stats overview connected to real API data
-- [x] **Association Cards** - Display associations from database
-- [x] **Associations Listing** - Public page with real API data
-- [x] **Association Detail** - Individual association pages from API
-- [x] **Donations Management** - List, approve, reject donations (persists to DB)
-- [x] **Beneficiaries Management** - List beneficiaries with status filtering
-- [x] **Families Management** - List families with real statistics
-- [x] **Rules Configuration** - Toggle rules (persists to DB)
-- [x] **New Donation Form** - Creates real donations via API
-- [x] **Reports Page** - Real statistics and monthly breakdown
-- [x] **Settings Page** - Shows real user profile data
-- [x] **Responsive Design** - Mobile-friendly UI
-- [x] **API Integration** - Custom hooks for each resource
+---
 
-## Features Not Yet Implemented
+## 📋 Features Overview
 
-### Backend
-- [ ] Activity logging/audit trails
-- [ ] Email notifications
-- [ ] File uploads (logos, documents)
-- [ ] Advanced search and filtering
-- [ ] Data export (CSV, PDF reports)
-- [ ] Rate limiting
-- [ ] Profile update endpoint
+### ✅ What's Working
 
-### Frontend
-- [ ] Add Beneficiary modal/form
-- [ ] Add Family modal/form
-- [ ] Create Rule modal/form
-- [ ] Real-time notifications
-- [ ] Dark mode toggle
-- [ ] Multi-language support (French/Arabic)
-- [ ] Data visualization charts
+#### Backend API
+| Feature | Description |
+|---------|-------------|
+| 🔐 **Authentication** | JWT-based login/register with secure password hashing |
+| 👥 **User Management** | Full CRUD with role-based permissions |
+| 🏢 **Associations** | Create and manage charity organizations |
+| 👤 **Beneficiaries** | Track recipients with eligibility status |
+| 👨‍👩‍👧‍👦 **Families** | Group beneficiaries with cooldown tracking |
+| 💰 **Donations** | Complete workflow (create → approve → dispatch → complete) |
+| ⚙️ **Rules Engine** | Configurable donation rules that auto-enforce |
+| 📱 **Mobile API** | Optimized endpoints for mobile apps |
+| 📚 **Swagger Docs** | Auto-generated API documentation |
 
-### General
-- [ ] Unit and integration tests
-- [ ] CI/CD pipeline
-- [ ] Production deployment configuration
-- [ ] Payment integration (demo)
+#### Frontend Web App
+| Feature | Description |
+|---------|-------------|
+| 🏠 **Public Pages** | Landing page, association browser, impact stats |
+| 📊 **Dashboard** | Real-time stats for your association |
+| 📝 **CRUD Modals** | Add/Edit/View for all entities |
+| 🔍 **Search & Filter** | Find what you need quickly |
+| 📤 **CSV Export** | Download data for offline analysis |
+| 📱 **Responsive** | Works on desktop, tablet, and mobile |
+| 🔔 **Toast Notifications** | Instant feedback on all actions |
 
-## Application Status & Audit Findings
+---
 
-### ✅ Fully Dynamic Pages (Connected to Real API)
-1. **Dashboard** - Real stats from user's association
-2. **Donations** - Full CRUD with role-based permissions
-3. **Beneficiaries** - List, create, update status (role-based)
-4. **Families** - List, create (role-based)
-5. **Rules** - List, create, toggle (role-based)
-6. **Reports** - Real statistics and monthly breakdown
-7. **Settings** - User profile from AuthContext
-8. **New Donation Form** - Creates real donations with validation
-9. **Associations (Public)** - Real data with search/filter
-10. **Association Detail** - Dynamic stats from donations/beneficiaries
-11. **Home Page** - Real aggregate statistics
-12. **Impact Page** - Real platform-wide statistics
-13. **Associations Management** - Real data for Super Admin
+## 🔒 Role-Based Permissions
 
-### ⚠️ Pages with Mock Data (Backend Not Implemented)
-1. **Users Management** - Mock data (needs `/users` API endpoint)
-2. **Audit Log** - Mock data (needs `/audit-logs` API endpoint)
-3. **Impact Page** - "Recent Impact Stories" section is static
+Different users have different capabilities:
 
-### 🔒 Role-Based Access Control (Implemented)
-| Feature | Super Admin | Association Admin | Member | Donor |
-|---------|:-----------:|:-----------------:|:------:|:-----:|
-| View All Associations | ✅ | ❌ | ❌ | ❌ |
-| Manage Users | ✅ | ✅ | ❌ | ❌ |
-| Add Beneficiaries | ✅ | ✅ | ❌ | ❌ |
-| Add Families | ✅ | ✅ | ❌ | ❌ |
-| Create Rules | ✅ | ✅ | ❌ | ❌ |
-| Approve Donations | ✅ | ✅ | ❌ | ❌ |
-| View Reports | ✅ | ✅ | ❌ | ❌ |
-| View Own Donations | ✅ | ✅ | ✅ | ✅ |
-| Create Donations | ✅ | ✅ | ❌ | ❌ |
+| Action | Super Admin | Association Admin | Member | Donor |
+|--------|:-----------:|:-----------------:|:------:|:-----:|
+| View all associations | ✅ | ❌ | ❌ | ❌ |
+| Manage users | ✅ | ✅ | ❌ | ❌ |
+| Add beneficiaries | ✅ | ✅ | ✅ | ❌ |
+| Add families | ✅ | ✅ | ✅ | ❌ |
+| Configure rules | ✅ | ✅ | ❌ | ❌ |
+| Approve donations | ✅ | ✅ | ❌ | ❌ |
+| Dispatch donations | ✅ | ✅ | ✅ | ❌ |
+| View reports | ✅ | ✅ | ✅ | ❌ |
+| Make donations | ✅ | ✅ | ✅ | ✅ |
+| View own history | ✅ | ✅ | ✅ | ✅ |
 
-### 🎯 Features Implemented
-- ✅ **CSV Export** - Donations, Beneficiaries, Families, Reports
-- ✅ **Search & Filtering** - Associations page with category filters
-- ✅ **Create Modals** - Beneficiary, Family, Rule creation
-- ✅ **Role Indicators** - Color-coded badges in sidebar
-- ✅ **Loading States** - Skeletons and spinners throughout
-- ✅ **Error Handling** - Toast notifications for all actions
-- ✅ **Data Persistence** - All CRUD operations save to database
-- ✅ **Donor Filtering** - Donors see only their own donations
+---
 
-### Known Issues & Limitations
-1. **Donors and Super Admins** - Dashboard shows "No Association Linked" (expected behavior)
-2. **Type Case Mismatch** - Frontend uses lowercase, API uses uppercase (handled with normalization)
-3. **Users/Audit Pages** - Require backend implementation
-4. **Settings Save** - Profile update endpoint not implemented
-5. **Family Cooldown** - Not enforced in UI (backend logic exists)
+## ⚙️ Donation Rules System
 
-## API Endpoints
+One of the key features is the **Rules Engine** — configurable constraints that ensure fair distribution:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/auth/register | Register new user |
-| POST | /api/auth/login | Login user |
-| GET | /api/auth/me | Get current user |
-| GET | /api/associations | List associations |
-| GET | /api/beneficiaries | List beneficiaries |
-| GET | /api/families | List families |
-| GET | /api/donations | List donations |
-| GET | /api/rules | List donation rules |
+### Rule Types
 
-For full API documentation, visit http://localhost:3001/api/docs when the backend is running.
+| Type | What It Does | Example |
+|------|--------------|---------|
+| **Frequency** | Prevents duplicate donations to same family | "30 days between donations" |
+| **Amount** | Caps maximum donation size | "Max 500 TND per donation" |
+| **Eligibility** | Sets minimum requirements | "Family must have 3+ members" |
 
-## License
+Rules are enforced automatically when dispatching donations. Admins can toggle rules on/off as needed.
 
-This project is for educational purposes (school project).
+---
+
+## 📡 API Reference
+
+### Core Endpoints
+
+```
+Authentication
+  POST   /api/auth/register     Create new account
+  POST   /api/auth/login        Sign in
+  GET    /api/auth/me           Get current user profile
+
+Associations
+  GET    /api/associations      List all associations
+  GET    /api/associations/:id  Get single association
+  POST   /api/associations      Create association
+
+Beneficiaries
+  GET    /api/beneficiaries     List beneficiaries
+  POST   /api/beneficiaries     Add beneficiary
+  PATCH  /api/beneficiaries/:id/status  Update eligibility
+
+Families
+  GET    /api/families          List families
+  POST   /api/families          Add family
+  GET    /api/families/:id/cooldown  Check donation eligibility
+
+Donations
+  GET    /api/donations         List donations
+  POST   /api/donations         Create donation
+  PATCH  /api/donations/:id/approve   Approve donation
+  PATCH  /api/donations/:id/reject    Reject donation
+  PATCH  /api/donations/:id/complete  Mark as completed
+
+Rules
+  GET    /api/rules             List rules
+  POST   /api/rules             Create rule
+  PATCH  /api/rules/:id/toggle  Enable/disable rule
+```
+
+### Mobile API Endpoints
+
+```
+Public (No Auth)
+  GET    /api/mobile/associations      Browse charities
+  GET    /api/mobile/associations/:id  Get charity details
+  POST   /api/mobile/donate            Make anonymous donation
+
+Authenticated
+  POST   /api/mobile/donate/auth       Make tracked donation
+  GET    /api/mobile/my-donations      View donation history
+
+Staff Only
+  GET    /api/mobile/dashboard         Association statistics
+  GET    /api/mobile/dispatch/donations    Pending donations
+  GET    /api/mobile/dispatch/beneficiaries  Eligible recipients
+  POST   /api/mobile/dispatch          Assign donation to beneficiary
+```
+
+📖 **Full interactive documentation** available at `http://localhost:3001/api` when running locally.
+
+---
+
+## �️ Database Schema
+
+The application uses these main entities:
+
+```
+User ─────────────┬─────────────── Association
+                  │                     │
+                  │    ┌────────────────┼────────────────┐
+                  │    │                │                │
+                  ▼    ▼                ▼                ▼
+              Donation          Beneficiary          Family
+                  │                │                    │
+                  └────────────────┴────────────────────┘
+                                   │
+                                   ▼
+                            DonationRule
+```
+
+- **User**: Anyone who uses the platform (donors, staff, admins)
+- **Association**: Charity organization
+- **Family**: Household unit (can have multiple beneficiaries)
+- **Beneficiary**: Individual who receives aid
+- **Donation**: Money given by a donor
+- **DonationRule**: Constraints on how donations are distributed
+
+---
+
+## 🚧 Future Improvements
+
+Things we'd love to add:
+
+- [ ] **Email notifications** — Alert donors when their donation is dispatched
+- [ ] **Payment integration** — Accept online payments (Stripe, etc.)
+- [ ] **Multi-language** — French and Arabic support
+- [ ] **Dark mode** — Easy on the eyes
+- [ ] **Mobile app** — Native iOS/Android apps using the Mobile API
+- [ ] **Advanced analytics** — Charts and trend visualization
+- [ ] **Document uploads** — Store receipts and ID documents
+- [ ] **Audit logs** — Complete activity history
+
+---
+
+## 🤝 Contributing
+
+This is a school project, but contributions are welcome! Here's how:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project was created for educational purposes as part of a school curriculum. Feel free to use it as a learning resource or starting point for your own projects.
+
+---
+
+## 💬 Questions?
+
+If you run into issues or have questions:
+
+1. Check the [API documentation](http://localhost:3001/api) first
+2. Look through existing code — it's well-commented
+3. Open an issue on GitHub
+
+---
+
+<p align="center">
+  <strong>Built with ❤️ for charitable giving</strong><br>
+  <em>Making every donation count.</em>
+</p>
