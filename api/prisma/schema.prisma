@@ -85,6 +85,7 @@ model Family {
 
 model Beneficiary {
   id              String    @id @default(cuid())
+  nationalId      String?   @unique  // National ID card number for lookup
   firstName       String
   lastName        String
   email           String?

@@ -11,7 +11,9 @@ export class MobileService {
     private familiesService: FamiliesService,
   ) {}
 
-  // ==================== PUBLIC ENDPOINTS ====================
+  // ============================================================================
+  // PUBLIC ENDPOINTS
+  // ============================================================================
 
   /**
    * Get all active associations for public browsing
@@ -62,13 +64,13 @@ export class MobileService {
       throw new NotFoundException('Association not found');
     }
 
-    // Get contribution stats (money received)
+    // Get contribution stats
     const contributions = await this.prisma.contribution.findMany({
       where: { associationId: id, status: 'COMPLETED' },
       select: { amount: true },
     });
 
-    // Get dispatch stats (aid distributed)
+    // Get dispatch stats
     const dispatches = await this.prisma.dispatch.findMany({
       where: { associationId: id, status: 'COMPLETED' },
       select: { amount: true },
@@ -91,13 +93,14 @@ export class MobileService {
     };
   }
 
-  // ==================== DONOR ENDPOINTS ====================
+  // ============================================================================
+  // DONOR ENDPOINTS
+  // ============================================================================
 
   /**
-   * Create a contribution from a mobile donor (NEW - uses Contribution model)
-   * Can be anonymous (no donorId) or authenticated
+   * Create a contribution (donation from donor to association)
    */
-  async createMobileContribution(data: {
+  async createContribution(data: {
     associationId: string;
     amount: number;
     donorId?: string;
@@ -107,7 +110,7 @@ export class MobileService {
     method?: string;
     notes?: string;
   }) {
-    // Validate association exists and is active
+    // Validate association
     const association = await this.prisma.association.findUnique({
       where: { id: data.associationId },
     });
@@ -120,14 +123,13 @@ export class MobileService {
       throw new BadRequestException('Amount must be greater than 0');
     }
 
-    // Check AMOUNT rules
+    // Check AMOUNT rule (max donation limit)
     const rules = await this.rulesService.findByAssociation(data.associationId);
-    const activeRules = rules.filter((r) => r.isActive);
-    const amountRule = activeRules.find((r) => r.type === 'AMOUNT');
+    const amountRule = rules.find((r: any) => r.type === 'AMOUNT' && r.isActive);
     
     if (amountRule && data.amount > amountRule.value) {
       throw new BadRequestException(
-        `Contribution amount exceeds maximum allowed (${amountRule.value} ${amountRule.unit || 'TND'}).`,
+        `Donation amount exceeds maximum allowed (${amountRule.value} ${amountRule.unit || 'TND'}).`,
       );
     }
 
@@ -150,27 +152,12 @@ export class MobileService {
       id: contribution.id,
       amount: contribution.amount,
       status: contribution.status,
-      message: 'Contribution submitted successfully. Awaiting approval.',
+      message: 'Donation submitted successfully. Awaiting approval.',
     };
   }
 
   /**
-   * Legacy: Create a donation (for backward compatibility)
-   */
-  async createMobileDonation(data: {
-    associationId: string;
-    amount: number;
-    donorId?: string;
-    type?: string;
-    method?: string;
-    notes?: string;
-  }) {
-    // Redirect to new contribution system
-    return this.createMobileContribution(data);
-  }
-
-  /**
-   * Get contribution history for a donor
+   * Get donor's contribution history
    */
   async getDonorContributions(donorId: string) {
     return this.prisma.contribution.findMany({
@@ -184,256 +171,169 @@ export class MobileService {
     });
   }
 
-  /**
-   * Legacy: Get donation history for backward compatibility
-   */
-  async getDonorHistory(donorId: string) {
-    // Combine both legacy donations and new contributions
-    const [donations, contributions] = await Promise.all([
-      this.prisma.donation.findMany({
-        where: { donorId },
-        include: {
-          association: {
-            select: { id: true, name: true, logo: true },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.contribution.findMany({
-        where: { donorId },
-        include: {
-          association: {
-            select: { id: true, name: true, logo: true },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-    ]);
-
-    // Merge and sort by date
-    const all = [
-      ...donations.map(d => ({ ...d, source: 'donation' })),
-      ...contributions.map(c => ({ ...c, source: 'contribution' })),
-    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    return all;
-  }
-
-  // ==================== ASSOCIATION MEMBER ENDPOINTS ====================
+  // ============================================================================
+  // STAFF - CONTRIBUTION APPROVAL
+  // ============================================================================
 
   /**
-   * Get beneficiaries for dispatch (association members/admins)
+   * Get pending contributions for an association
    */
-  async getBeneficiariesForDispatch(associationId: string) {
-    return this.prisma.beneficiary.findMany({
+  async getPendingContributions(associationId: string) {
+    return this.prisma.contribution.findMany({
       where: { 
         associationId,
-        status: 'ELIGIBLE',
+        status: 'PENDING',
       },
       include: {
-        family: {
-          select: { 
-            id: true, 
-            name: true, 
-            memberCount: true,
-            status: true,
-            lastDonationDate: true,
-          },
-        },
-      },
-      orderBy: { lastName: 'asc' },
-    });
-  }
-
-  /**
-   * Get pending donations for an association (to dispatch)
-   */
-  async getPendingDonations(associationId: string) {
-    return this.prisma.donation.findMany({
-      where: { 
-        associationId,
-        status: { in: ['PENDING', 'APPROVED'] },
-      },
-      include: {
-        donor: { select: { id: true, name: true } },
-        beneficiary: { select: { id: true, firstName: true, lastName: true } },
-        family: { select: { id: true, name: true } },
+        donor: { select: { id: true, name: true, email: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   /**
-   * Dispatch a donation to a beneficiary
-   * This assigns a beneficiary/family to an approved donation and marks it completed
+   * Approve or reject a contribution
    */
-  async dispatchDonation(data: {
-    donationId: string;
-    beneficiaryId: string;
+  async approveOrRejectContribution(data: {
+    contributionId: string;
+    action: 'APPROVE' | 'REJECT';
+    reason?: string;
     associationId: string;
-    dispatchedBy: string;
+    approvedById: string;
   }) {
-    // Get the donation
-    const donation = await this.prisma.donation.findUnique({
-      where: { id: data.donationId },
+    const contribution = await this.prisma.contribution.findUnique({
+      where: { id: data.contributionId },
     });
 
-    if (!donation) {
-      throw new NotFoundException('Donation not found');
+    if (!contribution) {
+      throw new NotFoundException('Contribution not found');
     }
 
-    if (donation.associationId !== data.associationId) {
-      throw new BadRequestException('Donation does not belong to your association');
+    if (contribution.associationId !== data.associationId) {
+      throw new BadRequestException('Contribution does not belong to your association');
     }
 
-    if (donation.status !== 'APPROVED' && donation.status !== 'PENDING') {
-      throw new BadRequestException('Only pending or approved donations can be dispatched');
+    if (contribution.status !== 'PENDING') {
+      throw new BadRequestException('Only pending contributions can be approved/rejected');
     }
 
-    // Get the beneficiary and their family
-    const beneficiary = await this.prisma.beneficiary.findUnique({
-      where: { id: data.beneficiaryId },
-      include: { family: true },
+    if (data.action === 'APPROVE') {
+      // Approve: Update status and add to budget
+      const [updatedContribution] = await this.prisma.$transaction([
+        this.prisma.contribution.update({
+          where: { id: data.contributionId },
+          data: {
+            status: 'COMPLETED',
+            approvedAt: new Date(),
+            notes: contribution.notes 
+              ? `${contribution.notes}\nApproved by user ${data.approvedById}`
+              : `Approved by user ${data.approvedById}`,
+          },
+        }),
+        this.prisma.association.update({
+          where: { id: data.associationId },
+          data: {
+            budget: { increment: contribution.amount },
+          },
+        }),
+      ]);
+
+      return {
+        id: updatedContribution.id,
+        status: 'COMPLETED',
+        amount: updatedContribution.amount,
+        message: 'Contribution approved and added to budget',
+      };
+    } else {
+      // Reject
+      if (!data.reason) {
+        throw new BadRequestException('Rejection reason is required');
+      }
+
+      const updatedContribution = await this.prisma.contribution.update({
+        where: { id: data.contributionId },
+        data: {
+          status: 'REJECTED',
+          notes: contribution.notes 
+            ? `${contribution.notes}\nRejected: ${data.reason}`
+            : `Rejected: ${data.reason}`,
+        },
+      });
+
+      return {
+        id: updatedContribution.id,
+        status: 'REJECTED',
+        message: 'Contribution rejected',
+      };
+    }
+  }
+
+  // ============================================================================
+  // STAFF - BENEFICIARY LOOKUP
+  // ============================================================================
+
+  /**
+   * Lookup beneficiary by National ID
+   */
+  async lookupBeneficiaryByNationalId(nationalId: string, associationId: string) {
+    const beneficiary = await this.prisma.beneficiary.findFirst({
+      where: { 
+        nationalId,
+        associationId,
+      },
+      include: {
+        family: true,
+      },
     });
 
     if (!beneficiary) {
-      throw new NotFoundException('Beneficiary not found');
+      throw new NotFoundException(`Beneficiary with National ID "${nationalId}" not found in your association`);
     }
 
-    if (beneficiary.associationId !== data.associationId) {
-      throw new BadRequestException('Beneficiary does not belong to your association');
-    }
+    // Check eligibility and cooldown
+    let canReceive = beneficiary.status === 'ELIGIBLE';
+    let cooldownEnds = null;
 
-    if (beneficiary.status !== 'ELIGIBLE') {
-      throw new BadRequestException('Beneficiary is not eligible for donations');
-    }
-
-    const familyId = beneficiary.familyId;
-
-    // Check rules
-    const rules = await this.rulesService.findByAssociation(data.associationId);
-    const activeRules = rules.filter((r) => r.isActive);
-
-    // Check FREQUENCY rule (cooldown)
-    const cooldownRule = activeRules.find((r) => r.type === 'FREQUENCY');
-    if (cooldownRule && familyId) {
-      const isEligible = await this.familiesService.checkCooldown(
-        familyId,
-        cooldownRule.value,
-      );
-      if (!isEligible) {
-        throw new BadRequestException(
-          `Family is in cooldown period. Wait ${cooldownRule.value} ${cooldownRule.unit || 'days'} between donations.`,
+    if (canReceive && beneficiary.familyId) {
+      const rules = await this.rulesService.findByAssociation(associationId);
+      const cooldownRule = rules.find((r: any) => r.type === 'FREQUENCY' && r.isActive);
+      
+      if (cooldownRule) {
+        canReceive = await this.familiesService.checkCooldown(
+          beneficiary.familyId,
+          cooldownRule.value,
         );
+        if (!canReceive && beneficiary.family?.lastDonationDate) {
+          const endDate = new Date(beneficiary.family.lastDonationDate);
+          endDate.setDate(endDate.getDate() + cooldownRule.value);
+          cooldownEnds = endDate;
+        }
       }
     }
 
-    // Check ELIGIBILITY rule (minimum family members)
-    const eligibilityRule = activeRules.find((r) => r.type === 'ELIGIBILITY');
-    if (eligibilityRule && eligibilityRule.unit === 'members' && beneficiary.family) {
-      if (beneficiary.family.memberCount < eligibilityRule.value) {
-        throw new BadRequestException(
-          `Family does not meet minimum member requirement (${eligibilityRule.value} members).`,
-        );
-      }
-    }
-
-    // Update donation with beneficiary and mark as completed
-    const updatedDonation = await this.prisma.donation.update({
-      where: { id: data.donationId },
-      data: {
-        beneficiaryId: data.beneficiaryId,
-        familyId: familyId,
-        status: 'COMPLETED',
-        processedAt: new Date(),
-        notes: donation.notes 
-          ? `${donation.notes}\nDispatched by user ${data.dispatchedBy}`
-          : `Dispatched by user ${data.dispatchedBy}`,
-      },
-    });
-
-    // Update beneficiary stats
-    await this.prisma.beneficiary.update({
-      where: { id: data.beneficiaryId },
-      data: {
-        lastDonationDate: new Date(),
-        totalReceived: { increment: donation.amount },
-      },
-    });
-
-    // Update family stats
-    if (familyId) {
-      await this.prisma.family.update({
-        where: { id: familyId },
-        data: {
-          lastDonationDate: new Date(),
-          totalReceived: { increment: donation.amount },
-          status: 'COOLDOWN',
-        },
-      });
-    }
-
     return {
-      id: updatedDonation.id,
-      status: 'COMPLETED',
-      beneficiaryId: data.beneficiaryId,
-      amount: updatedDonation.amount,
-      message: 'Donation dispatched successfully',
+      id: beneficiary.id,
+      nationalId: beneficiary.nationalId,
+      firstName: beneficiary.firstName,
+      lastName: beneficiary.lastName,
+      status: beneficiary.status,
+      totalReceived: beneficiary.totalReceived,
+      lastDonationDate: beneficiary.lastDonationDate,
+      family: beneficiary.family ? {
+        id: beneficiary.family.id,
+        name: beneficiary.family.name,
+        memberCount: beneficiary.family.memberCount,
+        status: beneficiary.family.status,
+      } : null,
+      canReceive,
+      cooldownEnds,
+      message: canReceive ? 'Eligible for aid' : (cooldownEnds ? `In cooldown until ${cooldownEnds.toDateString()}` : 'Not eligible'),
     };
   }
 
-  /**
-   * Get association dashboard stats for mobile
-   */
-  async getAssociationDashboard(associationId: string) {
-    const [
-      totalDonations,
-      pendingDonations,
-      completedDonations,
-      beneficiaryCount,
-      eligibleBeneficiaries,
-      familyCount,
-    ] = await Promise.all([
-      this.prisma.donation.aggregate({
-        where: { associationId, status: 'COMPLETED' },
-        _sum: { amount: true },
-        _count: true,
-      }),
-      this.prisma.donation.count({
-        where: { associationId, status: 'PENDING' },
-      }),
-      this.prisma.donation.count({
-        where: { associationId, status: 'COMPLETED' },
-      }),
-      this.prisma.beneficiary.count({
-        where: { associationId },
-      }),
-      this.prisma.beneficiary.count({
-        where: { associationId, status: 'ELIGIBLE' },
-      }),
-      this.prisma.family.count({
-        where: { associationId },
-      }),
-    ]);
-
-    return {
-      donations: {
-        totalAmount: totalDonations._sum.amount || 0,
-        totalCount: totalDonations._count,
-        pendingCount: pendingDonations,
-        completedCount: completedDonations,
-      },
-      beneficiaries: {
-        total: beneficiaryCount,
-        eligible: eligibleBeneficiaries,
-      },
-      families: {
-        total: familyCount,
-      },
-    };
-  }
-
-  // ==================== NEW CONTRIBUTION/DISPATCH METHODS ====================
+  // ============================================================================
+  // STAFF - DISPATCH AID
+  // ============================================================================
 
   /**
    * Get association budget
@@ -457,7 +357,7 @@ export class MobileService {
   }
 
   /**
-   * Get eligible beneficiaries for dispatch (with cooldown info)
+   * Get eligible beneficiaries for dispatch
    */
   async getEligibleBeneficiariesForDispatch(associationId: string) {
     const beneficiaries = await this.prisma.beneficiary.findMany({
@@ -465,13 +365,10 @@ export class MobileService {
         associationId,
         status: 'ELIGIBLE',
       },
-      include: {
-        family: true,
-      },
+      include: { family: true },
       orderBy: { lastName: 'asc' },
     });
 
-    // Check cooldown status for each
     const rules = await this.rulesService.findByAssociation(associationId);
     const cooldownRule = rules.find((r: any) => r.type === 'FREQUENCY' && r.isActive);
 
@@ -481,10 +378,7 @@ export class MobileService {
         let cooldownEnds = null;
 
         if (cooldownRule && b.familyId) {
-          canReceive = await this.familiesService.checkCooldown(
-            b.familyId,
-            cooldownRule.value,
-          );
+          canReceive = await this.familiesService.checkCooldown(b.familyId, cooldownRule.value);
           if (!canReceive && b.family?.lastDonationDate) {
             const endDate = new Date(b.family.lastDonationDate);
             endDate.setDate(endDate.getDate() + cooldownRule.value);
@@ -494,6 +388,7 @@ export class MobileService {
 
         return {
           id: b.id,
+          nationalId: b.nationalId,
           firstName: b.firstName,
           lastName: b.lastName,
           familyId: b.familyId,
@@ -511,15 +406,48 @@ export class MobileService {
   }
 
   /**
-   * Create a dispatch (give aid to beneficiary from budget)
+   * Dispatch aid by National ID
    */
-  async createDispatch(data: {
+  async dispatchByNationalId(data: {
+    nationalId: string;
+    amount: number;
+    aidType?: string;
+    notes?: string;
     associationId: string;
+    processedById: string;
+  }) {
+    // Find beneficiary by national ID
+    const beneficiary = await this.prisma.beneficiary.findFirst({
+      where: { 
+        nationalId: data.nationalId,
+        associationId: data.associationId,
+      },
+    });
+
+    if (!beneficiary) {
+      throw new NotFoundException(`Beneficiary with National ID "${data.nationalId}" not found`);
+    }
+
+    // Delegate to dispatchById
+    return this.dispatchById({
+      beneficiaryId: beneficiary.id,
+      amount: data.amount,
+      aidType: data.aidType,
+      notes: data.notes,
+      associationId: data.associationId,
+      processedById: data.processedById,
+    });
+  }
+
+  /**
+   * Dispatch aid by Beneficiary ID
+   */
+  async dispatchById(data: {
     beneficiaryId: string;
     amount: number;
     aidType?: string;
-    familyId?: string;
     notes?: string;
+    associationId: string;
     processedById: string;
   }) {
     // Get association and check budget
@@ -537,7 +465,7 @@ export class MobileService {
       );
     }
 
-    // Get beneficiary and their family
+    // Get beneficiary and family
     const beneficiary = await this.prisma.beneficiary.findUnique({
       where: { id: data.beneficiaryId },
       include: { family: true },
@@ -555,35 +483,32 @@ export class MobileService {
       throw new BadRequestException('Beneficiary is not eligible for aid');
     }
 
-    const familyId = data.familyId || beneficiary.familyId;
+    const familyId = beneficiary.familyId;
 
-    // Check association rules
+    // Check rules
     const rules = await this.rulesService.findByAssociation(data.associationId);
     const activeRules = rules.filter((r: any) => r.isActive);
 
-    // Check FREQUENCY rule (cooldown)
+    // FREQUENCY rule (cooldown)
     const cooldownRule = activeRules.find((r: any) => r.type === 'FREQUENCY');
     if (cooldownRule && familyId) {
-      const isEligible = await this.familiesService.checkCooldown(
-        familyId,
-        cooldownRule.value,
-      );
+      const isEligible = await this.familiesService.checkCooldown(familyId, cooldownRule.value);
       if (!isEligible) {
         throw new BadRequestException(
-          `Family is in cooldown period. Must wait ${cooldownRule.value} ${cooldownRule.unit || 'days'} between aid dispatches.`,
+          `Family is in cooldown. Must wait ${cooldownRule.value} ${cooldownRule.unit || 'days'} between dispatches.`,
         );
       }
     }
 
-    // Check AMOUNT rule (max dispatch amount)
+    // AMOUNT rule
     const amountRule = activeRules.find((r: any) => r.type === 'AMOUNT');
     if (amountRule && data.amount > amountRule.value) {
       throw new BadRequestException(
-        `Dispatch amount exceeds maximum allowed (${amountRule.value} ${amountRule.unit || 'TND'}).`,
+        `Amount exceeds maximum allowed (${amountRule.value} ${amountRule.unit || 'TND'}).`,
       );
     }
 
-    // Check ELIGIBILITY rule (minimum family members)
+    // ELIGIBILITY rule (min family members)
     const eligibilityRule = activeRules.find((r: any) => r.type === 'ELIGIBILITY');
     if (eligibilityRule && eligibilityRule.unit === 'members' && beneficiary.family) {
       if (beneficiary.family.memberCount < eligibilityRule.value) {
@@ -593,9 +518,8 @@ export class MobileService {
       }
     }
 
-    // Create dispatch, update budget, and update beneficiary/family stats in a transaction
+    // Execute dispatch in transaction
     const [dispatch] = await this.prisma.$transaction([
-      // Create the dispatch record
       this.prisma.dispatch.create({
         data: {
           amount: data.amount,
@@ -614,14 +538,10 @@ export class MobileService {
           family: true,
         },
       }),
-      // Deduct from association budget
       this.prisma.association.update({
         where: { id: data.associationId },
-        data: {
-          budget: { decrement: data.amount },
-        },
+        data: { budget: { decrement: data.amount } },
       }),
-      // Update beneficiary stats
       this.prisma.beneficiary.update({
         where: { id: data.beneficiaryId },
         data: {
@@ -629,7 +549,6 @@ export class MobileService {
           totalReceived: { increment: data.amount },
         },
       }),
-      // Update family stats
       ...(familyId ? [
         this.prisma.family.update({
           where: { id: familyId },
@@ -646,23 +565,25 @@ export class MobileService {
       id: dispatch.id,
       amount: dispatch.amount,
       aidType: dispatch.aidType,
-      beneficiaryId: data.beneficiaryId,
+      beneficiaryId: dispatch.beneficiaryId,
       beneficiaryName: `${dispatch.beneficiary?.firstName} ${dispatch.beneficiary?.lastName}`,
+      beneficiaryNationalId: dispatch.beneficiary?.nationalId,
       familyId: dispatch.familyId,
+      familyName: dispatch.family?.name,
       status: 'COMPLETED',
       message: 'Aid dispatched successfully',
     };
   }
 
   /**
-   * Get dispatch history for an association
+   * Get dispatch history
    */
   async getDispatchHistory(associationId: string) {
     return this.prisma.dispatch.findMany({
       where: { associationId },
       include: {
         beneficiary: {
-          select: { id: true, firstName: true, lastName: true },
+          select: { id: true, nationalId: true, firstName: true, lastName: true },
         },
         family: {
           select: { id: true, name: true },
@@ -673,5 +594,119 @@ export class MobileService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // ============================================================================
+  // DASHBOARD
+  // ============================================================================
+
+  /**
+   * Get dashboard statistics
+   */
+  async getDashboard(associationId: string) {
+    const [
+      association,
+      pendingContributions,
+      completedContributions,
+      completedDispatches,
+      beneficiaryCount,
+      eligibleBeneficiaries,
+      familyCount,
+    ] = await Promise.all([
+      this.prisma.association.findUnique({
+        where: { id: associationId },
+        select: { budget: true },
+      }),
+      this.prisma.contribution.aggregate({
+        where: { associationId, status: 'PENDING' },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      this.prisma.contribution.aggregate({
+        where: { associationId, status: 'COMPLETED' },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      this.prisma.dispatch.aggregate({
+        where: { associationId, status: 'COMPLETED' },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      this.prisma.beneficiary.count({
+        where: { associationId },
+      }),
+      this.prisma.beneficiary.count({
+        where: { associationId, status: 'ELIGIBLE' },
+      }),
+      this.prisma.family.count({
+        where: { associationId },
+      }),
+    ]);
+
+    return {
+      budget: association?.budget || 0,
+      contributions: {
+        pendingAmount: pendingContributions._sum.amount || 0,
+        pendingCount: pendingContributions._count,
+        completedAmount: completedContributions._sum.amount || 0,
+        completedCount: completedContributions._count,
+      },
+      dispatches: {
+        totalAmount: completedDispatches._sum.amount || 0,
+        totalCount: completedDispatches._count,
+      },
+      beneficiaries: {
+        total: beneficiaryCount,
+        eligible: eligibleBeneficiaries,
+      },
+      families: {
+        total: familyCount,
+      },
+    };
+  }
+
+  // ============================================================================
+  // LEGACY METHODS (for backward compatibility)
+  // ============================================================================
+
+  async createMobileContribution(data: any) {
+    return this.createContribution(data);
+  }
+
+  async createMobileDonation(data: any) {
+    return this.createContribution(data);
+  }
+
+  async getDonorHistory(donorId: string) {
+    return this.getDonorContributions(donorId);
+  }
+
+  async getBeneficiariesForDispatch(associationId: string) {
+    return this.getEligibleBeneficiariesForDispatch(associationId);
+  }
+
+  async getPendingDonations(associationId: string) {
+    return this.getPendingContributions(associationId);
+  }
+
+  async getAssociationDashboard(associationId: string) {
+    return this.getDashboard(associationId);
+  }
+
+  async createDispatch(data: any) {
+    return this.dispatchById({
+      beneficiaryId: data.beneficiaryId,
+      amount: data.amount,
+      aidType: data.aidType,
+      notes: data.notes,
+      associationId: data.associationId,
+      processedById: data.processedById,
+    });
+  }
+
+  async dispatchDonation(data: any) {
+    // Legacy: dispatch a donation to a beneficiary
+    // This was for the old model where donations were dispatched
+    throw new BadRequestException('Legacy donation dispatch is deprecated. Use dispatch/by-id or dispatch/by-national-id.');
   }
 }

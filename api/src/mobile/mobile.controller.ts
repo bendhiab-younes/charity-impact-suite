@@ -7,57 +7,72 @@ import {
   Query,
   UseGuards,
   Request,
+  Patch,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { MobileService } from './mobile.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { CreateMobileDonationDto, DispatchDonationDto, CreateMobileContributionDto, CreateMobileDispatchDto } from './dto';
+import { 
+  CreateContributionDto, 
+  ApproveContributionDto,
+  DispatchByNationalIdDto,
+  DispatchByIdDto,
+  // Legacy
+  CreateMobileDonationDto, 
+  DispatchDonationDto 
+} from './dto';
 
-@ApiTags('Mobile')
+@ApiTags('Mobile API')
 @Controller('mobile')
 export class MobileController {
   constructor(private mobileService: MobileService) {}
 
-  // ==================== PUBLIC ENDPOINTS (No Auth Required) ====================
+  // ============================================================================
+  // PUBLIC ENDPOINTS - No Authentication Required
+  // ============================================================================
 
   @Get('associations')
   @ApiOperation({ 
-    summary: 'Get all active associations for public browsing',
-    description: 'Returns a list of all active associations with basic info for mobile app browsing. No authentication required.',
+    summary: 'List all active associations',
+    description: 'Returns active associations for donors to browse and choose where to donate.',
   })
   @ApiResponse({ status: 200, description: 'List of active associations' })
-  async getPublicAssociations() {
+  async getAssociations() {
     return this.mobileService.getPublicAssociations();
   }
 
   @Get('associations/:id')
   @ApiOperation({ 
-    summary: 'Get association details by ID',
-    description: 'Returns detailed information about a specific association including donation statistics.',
+    summary: 'Get association details',
+    description: 'Returns detailed info about an association including donation stats.',
   })
   @ApiParam({ name: 'id', description: 'Association ID' })
-  @ApiResponse({ status: 200, description: 'Association details with stats' })
-  @ApiResponse({ status: 404, description: 'Association not found' })
+  @ApiResponse({ status: 200, description: 'Association details' })
+  @ApiResponse({ status: 404, description: 'Not found' })
   async getAssociationDetails(@Param('id') id: string) {
     return this.mobileService.getAssociationDetails(id);
   }
 
-  // ==================== DONOR ENDPOINTS ====================
+  // ============================================================================
+  // DONOR ENDPOINTS - Anonymous or Authenticated
+  // ============================================================================
 
   @Post('donate')
   @ApiOperation({ 
-    summary: 'Create a donation (anonymous)',
-    description: 'Create a donation without authentication. Donation will be in PENDING status until approved by association admin.',
+    summary: 'Make a donation (anonymous)',
+    description: 'Create a contribution without logging in. Status will be PENDING until approved by association.',
   })
-  @ApiBody({ type: CreateMobileDonationDto })
-  @ApiResponse({ status: 201, description: 'Donation created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid data or amount exceeds limit' })
-  async createAnonymousDonation(@Body() dto: CreateMobileDonationDto) {
-    return this.mobileService.createMobileDonation({
+  @ApiBody({ type: CreateContributionDto })
+  @ApiResponse({ status: 201, description: 'Donation created, pending approval' })
+  @ApiResponse({ status: 400, description: 'Invalid data' })
+  async donateAnonymous(@Body() dto: CreateContributionDto) {
+    return this.mobileService.createContribution({
       associationId: dto.associationId,
       amount: dto.amount,
+      donorName: dto.donorName,
+      donorEmail: dto.donorEmail,
       type: dto.type,
       method: dto.method,
       notes: dto.notes,
@@ -68,18 +83,14 @@ export class MobileController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ 
-    summary: 'Create a donation (authenticated)',
-    description: 'Create a donation as an authenticated user. Tracks donor history.',
+    summary: 'Make a donation (authenticated)',
+    description: 'Create a contribution as logged-in user. Tracks in donation history.',
   })
-  @ApiBody({ type: CreateMobileDonationDto })
-  @ApiResponse({ status: 201, description: 'Donation created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid data or amount exceeds limit' })
+  @ApiBody({ type: CreateContributionDto })
+  @ApiResponse({ status: 201, description: 'Donation created' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async createAuthenticatedDonation(
-    @Request() req: any,
-    @Body() dto: CreateMobileDonationDto,
-  ) {
-    return this.mobileService.createMobileDonation({
+  async donateAuthenticated(@Request() req: any, @Body() dto: CreateContributionDto) {
+    return this.mobileService.createContribution({
       associationId: dto.associationId,
       amount: dto.amount,
       donorId: req.user.id,
@@ -93,135 +104,145 @@ export class MobileController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ 
-    summary: 'Get donation/contribution history',
-    description: 'Returns all donations and contributions made by the authenticated user.',
+    summary: 'Get my donation history',
+    description: 'Returns all donations made by the logged-in user.',
   })
-  @ApiResponse({ status: 200, description: 'List of donations/contributions' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getDonorHistory(@Request() req: any) {
-    return this.mobileService.getDonorHistory(req.user.id);
-  }
-
-  // ==================== NEW CONTRIBUTION ENDPOINTS ====================
-
-  @Post('contribute')
-  @ApiOperation({ 
-    summary: 'Create a contribution (anonymous)',
-    description: 'Create a contribution without authentication. Adds to association budget when approved.',
-  })
-  @ApiBody({ type: CreateMobileContributionDto })
-  @ApiResponse({ status: 201, description: 'Contribution created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid data or amount exceeds limit' })
-  async createAnonymousContribution(@Body() dto: CreateMobileContributionDto) {
-    return this.mobileService.createMobileContribution({
-      associationId: dto.associationId,
-      amount: dto.amount,
-      donorName: dto.donorName,
-      donorEmail: dto.donorEmail,
-      type: dto.type,
-      method: dto.method,
-      notes: dto.notes,
-    });
-  }
-
-  @Post('contribute/auth')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ 
-    summary: 'Create a contribution (authenticated)',
-    description: 'Create a contribution as an authenticated user. Tracks in your contribution history.',
-  })
-  @ApiBody({ type: CreateMobileContributionDto })
-  @ApiResponse({ status: 201, description: 'Contribution created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid data or amount exceeds limit' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async createAuthenticatedContribution(
-    @Request() req: any,
-    @Body() dto: CreateMobileContributionDto,
-  ) {
-    return this.mobileService.createMobileContribution({
-      associationId: dto.associationId,
-      amount: dto.amount,
-      donorId: req.user.id,
-      type: dto.type,
-      method: dto.method,
-      notes: dto.notes,
-    });
-  }
-
-  @Get('my-contributions')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ 
-    summary: 'Get contribution history',
-    description: 'Returns all contributions made by the authenticated user.',
-  })
-  @ApiResponse({ status: 200, description: 'List of contributions' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getDonorContributions(@Request() req: any) {
+  @ApiResponse({ status: 200, description: 'Donation history' })
+  async getMyDonations(@Request() req: any) {
     return this.mobileService.getDonorContributions(req.user.id);
   }
 
-  // ==================== NEW DISPATCH ENDPOINTS ====================
+  // ============================================================================
+  // STAFF ENDPOINTS - Member/Admin (Approve Donations)
+  // ============================================================================
 
-  @Get('dispatch/budget')
+  @Get('contributions/pending')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
   @ApiBearerAuth()
   @ApiOperation({ 
-    summary: 'Get association budget',
-    description: 'Returns the current available budget for dispatching aid.',
+    summary: 'Get pending contributions',
+    description: 'Returns contributions waiting for approval.',
+  })
+  @ApiResponse({ status: 200, description: 'List of pending contributions' })
+  async getPendingContributions(@Request() req: any) {
+    if (!req.user.associationId) {
+      return { error: 'No association linked' };
+    }
+    return this.mobileService.getPendingContributions(req.user.associationId);
+  }
+
+  @Patch('contributions/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Approve or reject a contribution',
+    description: 'Admin approves/rejects a pending donation. Approved donations add to budget.',
+  })
+  @ApiBody({ type: ApproveContributionDto })
+  @ApiResponse({ status: 200, description: 'Contribution updated' })
+  @ApiResponse({ status: 400, description: 'Invalid action' })
+  @ApiResponse({ status: 404, description: 'Contribution not found' })
+  async approveContribution(@Request() req: any, @Body() dto: ApproveContributionDto) {
+    if (!req.user.associationId) {
+      return { error: 'No association linked' };
+    }
+    return this.mobileService.approveOrRejectContribution({
+      contributionId: dto.contributionId,
+      action: dto.action,
+      reason: dto.reason,
+      associationId: req.user.associationId,
+      approvedById: req.user.id,
+    });
+  }
+
+  // ============================================================================
+  // STAFF ENDPOINTS - Member/Admin (Dispatch Aid)
+  // ============================================================================
+
+  @Get('budget')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Get available budget',
+    description: 'Returns current association budget available for dispatching.',
   })
   @ApiResponse({ status: 200, description: 'Budget information' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getAssociationBudget(@Request() req: any) {
+  async getBudget(@Request() req: any) {
     if (!req.user.associationId) {
-      return { error: 'No association linked to your account' };
+      return { error: 'No association linked' };
     }
     return this.mobileService.getAssociationBudget(req.user.associationId);
   }
 
-  @Get('dispatch/eligible')
+  @Get('beneficiary/lookup/:nationalId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
   @ApiBearerAuth()
   @ApiOperation({ 
-    summary: 'Get eligible beneficiaries for dispatch',
-    description: 'Returns beneficiaries who can receive aid (checking cooldown periods and eligibility).',
+    summary: 'Lookup beneficiary by National ID',
+    description: 'Find a beneficiary using their national ID card number (CIN).',
   })
-  @ApiResponse({ status: 200, description: 'List of eligible beneficiaries' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getEligibleForDispatch(@Request() req: any) {
+  @ApiParam({ name: 'nationalId', description: 'National ID (CIN) number', example: '12345678' })
+  @ApiResponse({ status: 200, description: 'Beneficiary found' })
+  @ApiResponse({ status: 404, description: 'Beneficiary not found' })
+  async lookupBeneficiary(@Request() req: any, @Param('nationalId') nationalId: string) {
     if (!req.user.associationId) {
-      return { error: 'No association linked to your account' };
+      return { error: 'No association linked' };
     }
-    return this.mobileService.getEligibleBeneficiariesForDispatch(req.user.associationId);
+    return this.mobileService.lookupBeneficiaryByNationalId(nationalId, req.user.associationId);
   }
 
-  @Post('dispatch/aid')
+  @Post('dispatch/by-national-id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
   @ApiBearerAuth()
   @ApiOperation({ 
-    summary: 'Dispatch aid to a beneficiary',
-    description: 'Creates a dispatch record, deducts from association budget, and updates beneficiary stats. Enforces all rules.',
+    summary: 'Dispatch aid using National ID',
+    description: 'Give aid to a beneficiary using their national ID. Deducts from budget.',
   })
-  @ApiBody({ type: CreateMobileDispatchDto })
+  @ApiBody({ type: DispatchByNationalIdDto })
   @ApiResponse({ status: 201, description: 'Aid dispatched successfully' })
   @ApiResponse({ status: 400, description: 'Insufficient budget or rule violation' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - insufficient role' })
-  async dispatchAid(@Request() req: any, @Body() dto: CreateMobileDispatchDto) {
+  @ApiResponse({ status: 404, description: 'Beneficiary not found' })
+  async dispatchByNationalId(@Request() req: any, @Body() dto: DispatchByNationalIdDto) {
     if (!req.user.associationId) {
-      return { error: 'No association linked to your account' };
+      return { error: 'No association linked' };
     }
-    return this.mobileService.createDispatch({
+    return this.mobileService.dispatchByNationalId({
+      nationalId: dto.nationalId,
+      amount: dto.amount,
+      aidType: dto.aidType,
+      notes: dto.notes,
       associationId: req.user.associationId,
+      processedById: req.user.id,
+    });
+  }
+
+  @Post('dispatch/by-id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Dispatch aid using Beneficiary ID',
+    description: 'Give aid to a beneficiary using their internal ID. Deducts from budget.',
+  })
+  @ApiBody({ type: DispatchByIdDto })
+  @ApiResponse({ status: 201, description: 'Aid dispatched successfully' })
+  @ApiResponse({ status: 400, description: 'Insufficient budget or rule violation' })
+  @ApiResponse({ status: 404, description: 'Beneficiary not found' })
+  async dispatchById(@Request() req: any, @Body() dto: DispatchByIdDto) {
+    if (!req.user.associationId) {
+      return { error: 'No association linked' };
+    }
+    return this.mobileService.dispatchById({
       beneficiaryId: dto.beneficiaryId,
       amount: dto.amount,
       aidType: dto.aidType,
-      familyId: dto.familyId,
       notes: dto.notes,
+      associationId: req.user.associationId,
       processedById: req.user.id,
     });
   }
@@ -232,80 +253,35 @@ export class MobileController {
   @ApiBearerAuth()
   @ApiOperation({ 
     summary: 'Get dispatch history',
-    description: 'Returns all dispatches made by the association.',
+    description: 'Returns all aid dispatches made by the association.',
   })
-  @ApiResponse({ status: 200, description: 'List of dispatches' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 200, description: 'Dispatch history' })
   async getDispatchHistory(@Request() req: any) {
     if (!req.user.associationId) {
-      return { error: 'No association linked to your account' };
+      return { error: 'No association linked' };
     }
     return this.mobileService.getDispatchHistory(req.user.associationId);
   }
 
-  // ==================== ASSOCIATION MEMBER/ADMIN ENDPOINTS (Legacy) ====================
-
-  @Get('dispatch/beneficiaries')
+  @Get('beneficiaries/eligible')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
   @ApiBearerAuth()
   @ApiOperation({ 
     summary: 'Get eligible beneficiaries',
-    description: 'Returns list of eligible beneficiaries for the user\'s association. Used for selecting recipients when dispatching donations.',
+    description: 'Returns beneficiaries who can receive aid (not in cooldown).',
   })
   @ApiResponse({ status: 200, description: 'List of eligible beneficiaries' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - insufficient role' })
-  async getBeneficiariesForDispatch(@Request() req: any) {
+  async getEligibleBeneficiaries(@Request() req: any) {
     if (!req.user.associationId) {
-      return { error: 'No association linked to your account' };
+      return { error: 'No association linked' };
     }
-    return this.mobileService.getBeneficiariesForDispatch(req.user.associationId);
+    return this.mobileService.getEligibleBeneficiariesForDispatch(req.user.associationId);
   }
 
-  @Get('dispatch/donations')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
-  @ApiBearerAuth()
-  @ApiOperation({ 
-    summary: 'Get donations to dispatch',
-    description: 'Returns pending and approved donations that can be dispatched to beneficiaries.',
-  })
-  @ApiResponse({ status: 200, description: 'List of pending/approved donations' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - insufficient role' })
-  async getPendingDonations(@Request() req: any) {
-    if (!req.user.associationId) {
-      return { error: 'No association linked to your account' };
-    }
-    return this.mobileService.getPendingDonations(req.user.associationId);
-  }
-
-  @Post('dispatch')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
-  @ApiBearerAuth()
-  @ApiOperation({ 
-    summary: 'Dispatch a donation',
-    description: 'Assigns a donation to a beneficiary and marks it as completed. Enforces cooldown and eligibility rules.',
-  })
-  @ApiBody({ type: DispatchDonationDto })
-  @ApiResponse({ status: 200, description: 'Donation dispatched successfully' })
-  @ApiResponse({ status: 400, description: 'Rule violation (cooldown, eligibility, etc.)' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - insufficient role' })
-  @ApiResponse({ status: 404, description: 'Donation or beneficiary not found' })
-  async dispatchDonation(@Request() req: any, @Body() dto: DispatchDonationDto) {
-    if (!req.user.associationId) {
-      return { error: 'No association linked to your account' };
-    }
-    return this.mobileService.dispatchDonation({
-      donationId: dto.donationId,
-      beneficiaryId: dto.beneficiaryId,
-      associationId: req.user.associationId,
-      dispatchedBy: req.user.id,
-    });
-  }
+  // ============================================================================
+  // DASHBOARD / STATS
+  // ============================================================================
 
   @Get('dashboard')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -313,15 +289,66 @@ export class MobileController {
   @ApiBearerAuth()
   @ApiOperation({ 
     summary: 'Get dashboard statistics',
-    description: 'Returns aggregated statistics for the user\'s association including donation totals, beneficiary counts, and family counts.',
+    description: 'Returns aggregated stats for the association.',
   })
-  @ApiResponse({ status: 200, description: 'Dashboard statistics' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - insufficient role' })
-  async getAssociationDashboard(@Request() req: any) {
+  @ApiResponse({ status: 200, description: 'Dashboard stats' })
+  async getDashboard(@Request() req: any) {
     if (!req.user.associationId) {
-      return { error: 'No association linked to your account' };
+      return { error: 'No association linked' };
     }
-    return this.mobileService.getAssociationDashboard(req.user.associationId);
+    return this.mobileService.getDashboard(req.user.associationId);
+  }
+
+  // ============================================================================
+  // LEGACY ENDPOINTS (backward compatibility)
+  // ============================================================================
+
+  @Post('contribute')
+  @ApiOperation({ summary: '[Legacy] Same as POST /donate' })
+  async legacyContribute(@Body() dto: CreateContributionDto) {
+    return this.donateAnonymous(dto);
+  }
+
+  @Post('contribute/auth')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '[Legacy] Same as POST /donate/auth' })
+  async legacyContributeAuth(@Request() req: any, @Body() dto: CreateContributionDto) {
+    return this.donateAuthenticated(req, dto);
+  }
+
+  @Get('my-contributions')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '[Legacy] Same as GET /my-donations' })
+  async legacyMyContributions(@Request() req: any) {
+    return this.getMyDonations(req);
+  }
+
+  @Get('dispatch/budget')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '[Legacy] Same as GET /budget' })
+  async legacyBudget(@Request() req: any) {
+    return this.getBudget(req);
+  }
+
+  @Get('dispatch/eligible')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '[Legacy] Same as GET /beneficiaries/eligible' })
+  async legacyEligible(@Request() req: any) {
+    return this.getEligibleBeneficiaries(req);
+  }
+
+  @Post('dispatch/aid')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '[Legacy] Same as POST /dispatch/by-id' })
+  async legacyDispatchAid(@Request() req: any, @Body() dto: DispatchByIdDto) {
+    return this.dispatchById(req, dto);
   }
 }

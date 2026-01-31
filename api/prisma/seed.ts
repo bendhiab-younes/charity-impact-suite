@@ -103,10 +103,11 @@ async function main() {
     },
   });
 
-  // Create beneficiaries
+  // Create beneficiaries with National IDs
   await prisma.beneficiary.createMany({
     data: [
       {
+        nationalId: '12345678',
         firstName: 'Khaled',
         lastName: 'Ben Ali',
         email: 'khaled.benali@email.tn',
@@ -116,6 +117,7 @@ async function main() {
         associationId: association1.id,
       },
       {
+        nationalId: '23456789',
         firstName: 'Amira',
         lastName: 'Ben Ali',
         status: 'ELIGIBLE',
@@ -123,6 +125,7 @@ async function main() {
         associationId: association1.id,
       },
       {
+        nationalId: '34567890',
         firstName: 'Youssef',
         lastName: 'Gharbi',
         email: 'youssef.gharbi@email.tn',
@@ -131,6 +134,7 @@ async function main() {
         associationId: association1.id,
       },
       {
+        nationalId: '45678901',
         firstName: 'Leila',
         lastName: 'Mejri',
         status: 'PENDING_REVIEW',
