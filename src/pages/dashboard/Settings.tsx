@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { Settings as SettingsIcon, Bell, Shield, Globe, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
@@ -14,11 +15,43 @@ import { toast } from "sonner";
 const Settings = () => {
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingAssoc, setIsSavingAssoc] = useState(false);
+  const [isLoadingAssoc, setIsLoadingAssoc] = useState(false);
   
   const nameParts = user?.name?.split(' ') || ['', ''];
   const [firstName, setFirstName] = useState(nameParts[0] || '');
   const [lastName, setLastName] = useState(nameParts.slice(1).join(' ') || '');
   const [email, setEmail] = useState(user?.email || '');
+  
+  // Association settings
+  const [assocName, setAssocName] = useState('');
+  const [assocDescription, setAssocDescription] = useState('');
+  const [assocAddress, setAssocAddress] = useState('');
+  const [assocPhone, setAssocPhone] = useState('');
+  
+  const isAssociationAdmin = user?.role?.toUpperCase() === 'ASSOCIATION_ADMIN';
+
+  // Load association data
+  useEffect(() => {
+    const loadAssociation = async () => {
+      if (!user?.associationId || !isAssociationAdmin) return;
+      
+      try {
+        setIsLoadingAssoc(true);
+        const assoc = await api.getAssociation(user.associationId);
+        setAssocName(assoc.name || '');
+        setAssocDescription(assoc.description || '');
+        setAssocAddress(assoc.address || '');
+        setAssocPhone(assoc.phone || '');
+      } catch (err) {
+        console.error('Failed to load association:', err);
+      } finally {
+        setIsLoadingAssoc(false);
+      }
+    };
+    
+    loadAssociation();
+  }, [user?.associationId, isAssociationAdmin]);
 
   const handleSaveProfile = async () => {
     try {
@@ -37,6 +70,26 @@ const Settings = () => {
       toast.error(err.message || 'Failed to update profile');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveAssociation = async () => {
+    if (!user?.associationId) return;
+    
+    try {
+      setIsSavingAssoc(true);
+      await api.updateAssociation(user.associationId, {
+        name: assocName,
+        description: assocDescription,
+        address: assocAddress,
+        phone: assocPhone,
+      });
+      
+      toast.success('Association settings updated successfully');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update association settings');
+    } finally {
+      setIsSavingAssoc(false);
     }
   };
 
@@ -162,33 +215,74 @@ const Settings = () => {
           </Card>
 
           {/* Association Settings (Admin only) */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
-                Association Settings
-              </CardTitle>
-              <CardDescription>Configure your association preferences</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="assocName">Association Name</Label>
-                <Input id="assocName" defaultValue="Hope Foundation" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="assocDesc">Description</Label>
-                <Input id="assocDesc" defaultValue="Providing food and shelter to families in need" />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Public Profile</p>
-                  <p className="text-sm text-muted-foreground">Allow public to view association details</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <Button>Save Association Settings</Button>
-            </CardContent>
-          </Card>
+          {isAssociationAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  Association Settings
+                </CardTitle>
+                <CardDescription>Configure your association preferences</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isLoadingAssoc ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="assocName">Association Name</Label>
+                      <Input 
+                        id="assocName" 
+                        value={assocName}
+                        onChange={(e) => setAssocName(e.target.value)}
+                        placeholder="Enter association name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="assocDesc">Description</Label>
+                      <Textarea 
+                        id="assocDesc" 
+                        value={assocDescription}
+                        onChange={(e) => setAssocDescription(e.target.value)}
+                        placeholder="Describe your association's mission and activities"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="assocAddress">Address</Label>
+                        <Input 
+                          id="assocAddress" 
+                          value={assocAddress}
+                          onChange={(e) => setAssocAddress(e.target.value)}
+                          placeholder="Association address"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="assocPhone">Phone</Label>
+                        <Input 
+                          id="assocPhone" 
+                          value={assocPhone}
+                          onChange={(e) => setAssocPhone(e.target.value)}
+                          placeholder="Contact phone number"
+                        />
+                      </div>
+                    </div>
+                    <Button onClick={handleSaveAssociation} disabled={isSavingAssoc}>
+                      {isSavingAssoc ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : 'Save Association Settings'}
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </DashboardLayout>

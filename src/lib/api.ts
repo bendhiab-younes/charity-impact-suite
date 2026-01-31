@@ -210,6 +210,15 @@ class ApiClient {
   async createUser(data: { email: string; password: string; name: string; role?: string; associationId?: string }) {
     return this.request<any>('/users', { method: 'POST', body: data });
   }
+
+  // Audit Logs
+  async getAuditLogs(associationId?: string, limit?: number) {
+    const params = new URLSearchParams();
+    if (associationId) params.append('associationId', associationId);
+    if (limit) params.append('limit', limit.toString());
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<any[]>(`/audit${query}`);
+  }
 }
 
 export const api = new ApiClient();

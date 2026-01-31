@@ -1,16 +1,8 @@
 import { Header, Footer } from "@/components/layout/PublicLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGlobalStats } from "@/hooks/useGlobalStats";
+import { useGlobalStats, type RecentDonation } from "@/hooks/useGlobalStats";
 import { TrendingUp, Users, Heart, Building2 } from "lucide-react";
-
-
-const recentImpact = [
-  { association: "Hope Foundation", metric: "Served 450 families during Ramadan food drive", date: "Dec 2024" },
-  { association: "Care Network", metric: "Distributed school supplies to 1,200 children", date: "Nov 2024" },
-  { association: "Community Aid", metric: "Provided winter clothing to 380 beneficiaries", date: "Nov 2024" },
-  { association: "Unity Relief", metric: "Emergency support for 95 displaced families", date: "Oct 2024" },
-];
 
 const Impact = () => {
   const { stats, isLoading } = useGlobalStats();
@@ -89,24 +81,43 @@ const Impact = () => {
           </div>
         </section>
 
-        {/* Recent Impact Stories */}
+        {/* Recent Impact Highlights */}
         <section className="py-16 px-4 bg-muted/30">
           <div className="container mx-auto max-w-4xl">
-            <h2 className="text-2xl font-semibold text-foreground mb-8 text-center">Recent Impact Highlights</h2>
-            <div className="space-y-4">
-              {recentImpact.map((item, index) => (
-                <div key={index} className="flex items-start gap-4 p-4 bg-background rounded-lg border">
-                  <div className="flex-shrink-0 w-2 h-2 mt-2 rounded-full bg-primary" />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold text-foreground">{item.association}</h3>
-                      <span className="text-xs text-muted-foreground">{item.date}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{item.metric}</p>
+            <h2 className="text-2xl font-semibold text-foreground mb-8 text-center">Recent Completed Donations</h2>
+            {isLoading ? (
+              <div className="space-y-4">
+                {Array(4).fill(0).map((_, i) => (
+                  <div key={i} className="p-4 bg-background rounded-lg border">
+                    <Skeleton className="h-16 w-full" />
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : stats.recentDonations.length > 0 ? (
+              <div className="space-y-4">
+                {stats.recentDonations.map((donation) => (
+                  <div key={donation.id} className="flex items-start gap-4 p-4 bg-background rounded-lg border">
+                    <div className="flex-shrink-0 w-2 h-2 mt-2 rounded-full bg-primary" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-semibold text-foreground">{donation.associationName}</h3>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(donation.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Received {donation.type.toLowerCase().replace(/_/g, ' ')} donation of {donation.amount.toLocaleString()} TND
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No completed donations yet. Be the first to make an impact!</p>
+              </div>
+            )}
           </div>
         </section>
 

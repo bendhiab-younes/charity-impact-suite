@@ -7,6 +7,14 @@ interface DistributionItem {
   count: number;
 }
 
+export interface RecentDonation {
+  id: string;
+  associationName: string;
+  type: string;
+  amount: number;
+  date: string;
+}
+
 interface GlobalStats {
   totalAssociations: number;
   activeAssociations: number;
@@ -17,6 +25,7 @@ interface GlobalStats {
   growthRate: number;
   distributionByType: DistributionItem[];
   distributionByCategory: DistributionItem[];
+  recentDonations: RecentDonation[];
 }
 
 export function useGlobalStats() {
@@ -30,6 +39,7 @@ export function useGlobalStats() {
     growthRate: 0,
     distributionByType: [],
     distributionByCategory: [],
+    recentDonations: [],
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -47,6 +57,9 @@ export function useGlobalStats() {
         // Track donation types and association categories
         const typeCount: Record<string, number> = {};
         const categoryCount: Record<string, number> = {};
+        
+        // Track all completed donations for recent activity
+        const allCompletedDonations: RecentDonation[] = [];
 
         for (const assoc of associations) {
           if (assoc._count?.beneficiaries) {
@@ -62,7 +75,17 @@ export function useGlobalStats() {
             totalDonations += donations.length;
             donations.forEach((d: any) => {
               if (d.amount) totalDonationAmount += d.amount;
-              if (d.status === 'COMPLETED') completedDonations++;
+              if (d.status === 'COMPLETED') {
+                completedDonations++;
+                // Add to recent donations
+                allCompletedDonations.push({
+                  id: d.id,
+                  associationName: assoc.name,
+                  type: d.type || 'OTHER',
+                  amount: d.amount || 0,
+                  date: d.createdAt,
+                });
+              }
               // Track donation type
               const type = d.type || 'OTHER';
               typeCount[type] = (typeCount[type] || 0) + 1;
@@ -71,6 +94,11 @@ export function useGlobalStats() {
             console.warn(`Could not fetch donations for ${assoc.id}`);
           }
         }
+
+        // Sort by date descending and take recent 5
+        const recentDonations = allCompletedDonations
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 5);
 
         // Calculate distribution percentages
         const distributionByType = Object.entries(typeCount)
@@ -104,6 +132,7 @@ export function useGlobalStats() {
           growthRate: 18, // Could be calculated from historical data
           distributionByType,
           distributionByCategory,
+          recentDonations,
         });
       } catch (err) {
         console.error('Failed to fetch global stats:', err);
