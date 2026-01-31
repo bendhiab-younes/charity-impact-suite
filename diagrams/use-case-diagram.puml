@@ -1,0 +1,81 @@
+@startuml Charity Impact Suite - Use Case Diagram
+
+left to right direction
+
+actor "Public User" as Public
+actor "Donor" as Donor
+actor "Association\nMember" as Member
+actor "Association\nAdmin" as Admin
+actor "Super Admin" as SuperAdmin
+
+rectangle "Charity Impact Suite" {
+  usecase "UC1: Login/Sign Up" as UC1
+  usecase "UC2: Browse Associations" as UC2
+  usecase "UC3: Make Donation\n(Anonymous)" as UC3
+  usecase "UC4: Make Donation\n(Authenticated)" as UC4
+  usecase "UC5: View Donation History" as UC5
+  usecase "UC6: Manage Beneficiaries" as UC6
+  usecase "UC7: Manage Families" as UC7
+  usecase "UC8: Process Donations" as UC8
+  usecase "UC9: Dispatch Donations" as UC9
+  usecase "UC10: Configure Rules" as UC10
+  usecase "UC11: View Dashboard\n& Reports" as UC11
+  usecase "UC12: Manage Users" as UC12
+  usecase "UC13: Manage Association" as UC13
+  usecase "UC14: View Activity Logs" as UC14
+}
+
+' Public User relationships
+Public --> UC2
+Public --> UC3
+
+' Donor relationships
+Donor --> UC1
+Donor --> UC2
+Donor --> UC4
+Donor --> UC5
+
+' Association Member relationships
+Member --> UC1
+Member --> UC6
+Member --> UC7
+Member --> UC8
+Member --> UC9
+Member --> UC11
+Member --> UC14
+
+' Association Admin relationships
+Admin --> UC1
+Admin --> UC6
+Admin --> UC7
+Admin --> UC8
+Admin --> UC9
+Admin --> UC10
+Admin --> UC11
+Admin --> UC12
+Admin --> UC13
+Admin --> UC14
+
+' Super Admin relationships
+SuperAdmin --> UC1
+SuperAdmin --> UC2
+SuperAdmin --> UC6
+SuperAdmin --> UC7
+SuperAdmin --> UC8
+SuperAdmin --> UC9
+SuperAdmin --> UC10
+SuperAdmin --> UC11
+SuperAdmin --> UC12
+SuperAdmin --> UC13
+SuperAdmin --> UC14
+
+' Include and extend relationships
+UC3 ..> UC10 : <<validates>>
+UC4 ..> UC10 : <<validates>>
+UC8 ..> UC6 : <<checks>>
+UC8 ..> UC10 : <<validates>>
+UC9 ..> UC6 : <<assigns to>>
+UC9 ..> UC7 : <<checks>>
+UC9 ..> UC10 : <<validates>>
+
+@enduml

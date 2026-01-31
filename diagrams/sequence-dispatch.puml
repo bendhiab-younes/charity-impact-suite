@@ -1,0 +1,58 @@
+@startuml Donation Dispatch Flow
+
+actor "Association\nMember" as Member
+participant "Mobile API" as Mobile
+participant "Mobile Service" as Service
+participant "Rule Service" as Rule
+participant "Beneficiary\nService" as Beneficiary
+participant "Family Service" as Family
+database "Database" as DB
+participant "Activity Log" as Log
+
+Member -> Mobile: POST /mobile/dispatch
+activate Mobile
+Mobile -> Service: dispatchDonation()
+activate Service
+
+Service -> DB: Get donation
+DB --> Service: Donation data
+Service -> DB: Get beneficiary
+DB --> Service: Beneficiary data
+Service -> DB: Get family
+DB --> Service: Family data
+
+Service -> Rule: Validate eligibility rules
+activate Rule
+Rule --> Service: Validation result
+deactivate Rule
+
+Service -> Family: Check cooldown
+activate Family
+Family --> Service: Cooldown check
+deactivate Family
+
+alt Rules violated or cooldown active
+    Service --> Mobile: 400 - Cannot dispatch
+    Mobile --> Member: Error message
+else All checks passed
+    Service -> DB: Update donation (COMPLETED)
+    Service -> DB: Assign beneficiary to donation
+    Service -> DB: Update beneficiary.totalReceived
+    Service -> DB: Update beneficiary.lastDonationDate
+    Service -> DB: Update family.totalReceived
+    Service -> DB: Update family.lastDonationDate
+    DB --> Service: Success
+    
+    Service -> Log: Create activity log
+    activate Log
+    Log -> DB: Insert log entry
+    deactivate Log
+    
+    Service --> Mobile: Dispatch successful
+    deactivate Service
+    Mobile --> Member: 200 - Success
+end
+
+deactivate Mobile
+
+@enduml

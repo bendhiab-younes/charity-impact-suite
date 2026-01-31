@@ -1,0 +1,50 @@
+@startuml User Authentication Flow
+
+actor User
+participant "Auth Controller" as Auth
+participant "Auth Service" as Service
+database "Database" as DB
+participant "JWT Strategy" as JWT
+
+== Registration ==
+
+User -> Auth: POST /auth/register
+activate Auth
+Auth -> Service: register(dto)
+activate Service
+Service -> DB: Check if email exists
+DB --> Service: Email available
+Service -> Service: Hash password
+Service -> DB: Create user
+DB --> Service: User created
+Service -> JWT: Generate token
+JWT --> Service: JWT token
+Service --> Auth: User + token
+Auth --> User: 201 - Registration successful
+deactivate Service
+deactivate Auth
+
+== Login ==
+
+User -> Auth: POST /auth/login
+activate Auth
+Auth -> Service: login(credentials)
+activate Service
+Service -> DB: Find user by email
+DB --> Service: User data
+Service -> Service: Verify password
+
+alt Invalid credentials
+    Service --> Auth: Unauthorized
+    Auth --> User: 401 - Invalid credentials
+else Valid credentials
+    Service -> JWT: Generate token
+    JWT --> Service: JWT token
+    Service --> Auth: User + token
+    Auth --> User: 200 - Login successful
+end
+
+deactivate Service
+deactivate Auth
+
+@enduml

@@ -1,0 +1,33 @@
+@startuml Anonymous Donation Flow
+
+actor "Public User" as Public
+participant "Mobile API" as Mobile
+participant "Donation Service" as Donation
+participant "Rule Service" as Rule
+database "Database" as DB
+
+Public -> Mobile: POST /mobile/donate
+activate Mobile
+
+Mobile -> Rule: Validate donation rules
+activate Rule
+Rule -> DB: Get active rules for association
+DB --> Rule: Rules data
+Rule --> Mobile: Validation result
+deactivate Rule
+
+alt Rules violated
+    Mobile --> Public: 400 - Rule violation error
+else Rules passed
+    Mobile -> Donation: Create donation (PENDING)
+    activate Donation
+    Donation -> DB: Insert donation record
+    DB --> Donation: Donation created
+    Donation --> Mobile: Donation data
+    deactivate Donation
+    Mobile --> Public: 201 - Donation created
+end
+
+deactivate Mobile
+
+@enduml

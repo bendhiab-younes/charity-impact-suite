@@ -1,0 +1,131 @@
+@startuml Charity Impact Suite - ER Diagram
+
+' Define entities
+entity "User" as user {
+  * id : String <<PK>>
+  --
+  * email : String <<UK>>
+  * password : String
+  * name : String
+  * role : String
+    associationId : String <<FK>>
+    avatar : String
+  * createdAt : DateTime
+  * updatedAt : DateTime
+}
+
+entity "Association" as association {
+  * id : String <<PK>>
+  --
+  * name : String
+  * description : String
+    logo : String
+    website : String
+  * email : String
+    phone : String
+    address : String
+  * status : String
+  * createdAt : DateTime
+  * updatedAt : DateTime
+}
+
+entity "Beneficiary" as beneficiary {
+  * id : String <<PK>>
+  --
+  * associationId : String <<FK>>
+  * familyId : String <<FK>>
+  * firstName : String
+  * lastName : String
+    email : String
+    phone : String
+    address : String
+  * status : String
+  * totalReceived : Float
+    lastDonationDate : DateTime
+    eligibilityNotes : String
+  * createdAt : DateTime
+  * updatedAt : DateTime
+}
+
+entity "Family" as family {
+  * id : String <<PK>>
+  --
+  * associationId : String <<FK>>
+  * name : String
+  * memberCount : Int
+    address : String
+  * status : String
+  * totalReceived : Float
+    lastDonationDate : DateTime
+  * createdAt : DateTime
+  * updatedAt : DateTime
+}
+
+entity "Donation" as donation {
+  * id : String <<PK>>
+  --
+  * associationId : String <<FK>>
+    donorId : String <<FK>>
+    beneficiaryId : String <<FK>>
+    familyId : String <<FK>>
+  * amount : Float
+  * currency : String
+  * status : String
+  * type : String
+  * method : String
+    notes : String
+    processedAt : DateTime
+  * createdAt : DateTime
+  * updatedAt : DateTime
+}
+
+entity "DonationRule" as rule {
+  * id : String <<PK>>
+  --
+  * associationId : String <<FK>>
+  * name : String
+  * description : String
+  * type : String
+  * value : Float
+    unit : String
+  * isActive : Boolean
+  * createdAt : DateTime
+  * updatedAt : DateTime
+}
+
+entity "ActivityLog" as log {
+  * id : String <<PK>>
+  --
+  * associationId : String <<FK>>
+  * userId : String <<FK>>
+  * action : String
+  * details : String
+  * entityType : String
+  * entityId : String
+  * createdAt : DateTime
+}
+
+' Define relationships
+user }o--|| association : "belongs to"
+user ||--o{ donation : "makes"
+user ||--o{ log : "creates"
+
+association ||--o{ user : "has members"
+association ||--o{ beneficiary : "manages"
+association ||--o{ family : "serves"
+association ||--o{ donation : "receives"
+association ||--o{ rule : "defines"
+association ||--o{ log : "tracks"
+
+family ||--o{ beneficiary : "contains"
+family ||--o{ donation : "receives"
+
+beneficiary }o--|| family : "member of"
+beneficiary ||--o{ donation : "receives"
+
+donation }o--o| user : "donor"
+donation }o--o| beneficiary : "for"
+donation }o--o| family : "for"
+donation }o--|| association : "to"
+
+@enduml

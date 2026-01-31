@@ -360,6 +360,27 @@ Things we'd love to add:
 
 ---
 
+## 📚 Documentation
+
+Complete system documentation with diagrams:
+
+### Architecture & Design
+- **[Class Diagram](class-diagram.md)** - Domain model with entities and relationships
+- **[Use Case Diagram](use-case-diagram.md)** - System functionality by user role
+- **[ER Diagram](er-diagram.md)** - Database schema and relationships
+- **[Sequence Diagrams](sequence-diagrams.md)** - Key workflow interactions
+- **[Architecture Diagram](architecture-diagram.md)** - System layers and components
+
+### Additional Resources
+- **[DIAGRAMS.md](DIAGRAMS.md)** - Complete guide to all diagrams (Mermaid & PlantUML)
+- **[diagrams/](diagrams/)** - Standalone PlantUML files for rendering
+- **[AUDIT_FINDINGS.md](AUDIT_FINDINGS.md)** - Security and code quality analysis
+- **[Mobile API Documentation](api/MOBILE_API.md)** - Mobile-specific endpoints
+
+All diagrams are provided in both **Mermaid** (for GitHub/VS Code) and **PlantUML** formats for professional documentation.
+
+---
+
 ## 🤝 Contributing
 
 This is a school project, but contributions are welcome! Here's how:
@@ -367,8 +388,11 @@ This is a school project, but contributions are welcome! Here's how:
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+4. **Update relevant diagrams** if you change the architecture
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
+
+See [DIAGRAMS.md](DIAGRAMS.md) for guidelines on updating documentation.
 
 ---
 

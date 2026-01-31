@@ -1,0 +1,76 @@
+@startuml System Architecture
+
+!define RECTANGLE class
+
+skinparam componentStyle rectangle
+
+package "Client Layer" {
+    [Web Application\nReact + Vite + TypeScript] as Web
+    [Mobile App\nReact Native / Flutter] as Mobile
+}
+
+package "API Gateway" {
+    [REST API\nNestJS + Express] as API
+}
+
+package "Authentication" {
+    [Auth Module\nJWT Strategy] as Auth
+    [Guards & Decorators\nRole-based Access] as Guards
+}
+
+package "Core Modules" {
+    [Associations Module] as Assoc
+    [Users Module] as Users
+    [Beneficiaries Module] as Benef
+    [Families Module] as Fam
+    [Donations Module] as Don
+    [Rules Module] as Rules
+    [Mobile Module\nPublic & Member APIs] as MobileAPI
+}
+
+package "Cross-Cutting" {
+    [Prisma Service\nORM Layer] as Prisma
+    [Activity Logs] as Logger
+    [DTO Validation] as Validation
+}
+
+package "Data Layer" {
+    database "SQLite Database\ndev.db" as DB
+}
+
+Web -down-> API : HTTP/REST
+Mobile -down-> API : HTTP/REST
+
+API -down-> Auth
+Auth -down-> Guards
+
+API -down-> Assoc
+API -down-> Users
+API -down-> Benef
+API -down-> Fam
+API -down-> Don
+API -down-> Rules
+API -down-> MobileAPI
+
+Assoc -down-> Prisma
+Users -down-> Prisma
+Benef -down-> Prisma
+Fam -down-> Prisma
+Don -down-> Prisma
+Rules -down-> Prisma
+MobileAPI -down-> Prisma
+
+Prisma -down-> DB
+
+Assoc --> Logger
+Users --> Logger
+Benef --> Logger
+Fam --> Logger
+Don --> Logger
+Rules --> Logger
+MobileAPI --> Logger
+
+Logger --> Prisma
+Guards --> Validation
+
+@enduml
