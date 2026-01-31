@@ -51,23 +51,21 @@ export function DonateModal({
 
     setIsSubmitting(true);
     try {
-      await api.createDonation({
+      // Use the new contributions API instead of legacy donations
+      await api.createContribution({
         associationId,
-        donorId: user?.id,
         amount: parseFloat(formData.amount),
-        currency: 'TND',
         type: formData.type,
         method: formData.method,
         notes: formData.notes || undefined,
-        status: 'PENDING', // Donor donations start as pending
       });
       
-      toast.success('Thank you! Your donation has been submitted and is pending approval.');
+      toast.success('Thank you! Your contribution has been submitted and is pending approval.');
       setFormData({ amount: '', method: 'CARD', type: 'ONE_TIME', notes: '' });
       onOpenChange(false);
       onSuccess?.();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to submit donation');
+      toast.error(err.message || 'Failed to submit contribution');
     } finally {
       setIsSubmitting(false);
     }
@@ -82,7 +80,7 @@ export function DonateModal({
             Make a Donation
           </DialogTitle>
           <DialogDescription>
-            Donate to {associationName}. Your donation will be pending until approved by the association.
+            Contribute to {associationName}. Your contribution will add to their budget to help beneficiaries in need.
           </DialogDescription>
         </DialogHeader>
         

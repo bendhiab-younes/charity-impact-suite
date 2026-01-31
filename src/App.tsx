@@ -20,6 +20,7 @@ import Reports from "./pages/dashboard/Reports";
 import AuditLog from "./pages/dashboard/AuditLog";
 import Settings from "./pages/dashboard/Settings";
 import NewDonation from "./pages/dashboard/NewDonation";
+import NewDispatch from "./pages/dashboard/NewDispatch";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/dashboard/families" element={<FamiliesManagement />} />
           <Route path="/dashboard/donations" element={<DonationsPage />} />
           <Route path="/dashboard/donations/new" element={<NewDonation />} />
+          <Route path="/dashboard/dispatch/new" element={<NewDispatch />} />
           <Route path="/dashboard/rules" element={<RulesPage />} />
           <Route path="/dashboard/reports" element={<Reports />} />
           <Route path="/dashboard/audit" element={<AuditLog />} />

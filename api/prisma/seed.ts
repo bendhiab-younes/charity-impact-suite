@@ -174,7 +174,7 @@ async function main() {
     ],
   });
 
-  // Create donations
+  // Create donations (legacy - keeping for backwards compatibility)
   await prisma.donation.createMany({
     data: [
       {
@@ -222,12 +222,131 @@ async function main() {
     ],
   });
 
+  // Get beneficiaries for dispatches
+  const beneficiaries = await prisma.beneficiary.findMany({
+    where: { associationId: association1.id },
+  });
+
+  // Create contributions (new system - money IN from donors)
+  const contribution1 = await prisma.contribution.create({
+    data: {
+      amount: 500,
+      currency: 'TND',
+      status: 'APPROVED',
+      type: 'ONE_TIME',
+      method: 'CARD',
+      notes: 'Contribution pour aider les familles',
+      associationId: association1.id,
+      donorId: donor.id,
+      approvedAt: new Date('2025-01-20'),
+    },
+  });
+
+  const contribution2 = await prisma.contribution.create({
+    data: {
+      amount: 1000,
+      currency: 'TND',
+      status: 'APPROVED',
+      type: 'ONE_TIME',
+      method: 'BANK_TRANSFER',
+      notes: 'Soutien mensuel',
+      associationId: association1.id,
+      donorId: donor.id,
+      approvedAt: new Date('2025-01-22'),
+    },
+  });
+
+  await prisma.contribution.create({
+    data: {
+      amount: 250,
+      currency: 'TND',
+      status: 'PENDING',
+      type: 'ONE_TIME',
+      method: 'CASH',
+      notes: 'En attente de validation',
+      associationId: association1.id,
+      donorName: 'Donateur Anonyme',
+      donorEmail: 'anon@email.tn',
+    },
+  });
+
+  await prisma.contribution.create({
+    data: {
+      amount: 750,
+      currency: 'TND',
+      status: 'APPROVED',
+      type: 'RECURRING',
+      method: 'CARD',
+      associationId: association1.id,
+      donorId: donor.id,
+      approvedAt: new Date('2025-01-25'),
+    },
+  });
+
+  // Update association budget (sum of approved contributions minus dispatched)
+  // Total approved: 500 + 1000 + 750 = 2250
+  // Will dispatch 400, so budget = 1850
+  await prisma.association.update({
+    where: { id: association1.id },
+    data: { budget: 1850 },
+  });
+
+  // Create dispatches (new system - aid OUT to beneficiaries)
+  if (beneficiaries.length > 0) {
+    await prisma.dispatch.create({
+      data: {
+        amount: 200,
+        currency: 'TND',
+        status: 'COMPLETED',
+        aidType: 'CASH',
+        notes: 'Aide mensuelle famille Ben Ali',
+        associationId: association1.id,
+        beneficiaryId: beneficiaries[0].id,
+        familyId: family1.id,
+        processedById: associationAdmin.id,
+        completedAt: new Date('2025-01-21'),
+      },
+    });
+
+    await prisma.dispatch.create({
+      data: {
+        amount: 150,
+        currency: 'TND',
+        status: 'COMPLETED',
+        aidType: 'FOOD',
+        notes: 'Colis alimentaire',
+        associationId: association1.id,
+        beneficiaryId: beneficiaries[2]?.id || beneficiaries[0].id,
+        familyId: family2.id,
+        processedById: associationMember.id,
+        completedAt: new Date('2025-01-23'),
+      },
+    });
+
+    await prisma.dispatch.create({
+      data: {
+        amount: 50,
+        currency: 'TND',
+        status: 'PENDING',
+        aidType: 'MEDICAL',
+        notes: 'Frais médicaux - en attente',
+        associationId: association1.id,
+        beneficiaryId: beneficiaries[1]?.id || beneficiaries[0].id,
+        familyId: family1.id,
+      },
+    });
+  }
+
   console.log('✅ Database seeded successfully!');
   console.log('\n📋 Demo Accounts:');
   console.log('  Super Admin:        admin@charity.tn / password123');
   console.log('  Association Admin:  admin@espoir-tunisie.org / password123');
   console.log('  Association Member: membre@espoir-tunisie.org / password123');
   console.log('  Donor:              donateur@email.tn / password123');
+  console.log('\n💰 Contribution/Dispatch Data:');
+  console.log('  Association Budget: 1850 TND');
+  console.log('  4 Contributions (3 approved, 1 pending)');
+  console.log('  3 Dispatches (2 completed, 1 pending)');
 }
 
 main()

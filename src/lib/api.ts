@@ -164,6 +164,83 @@ class ApiClient {
     return this.request<any>(`/donations/${id}/complete`, { method: 'PATCH' });
   }
 
+  // Contributions (Money IN from donors)
+  async getContributions(associationId: string, status?: string) {
+    const params = new URLSearchParams({ associationId });
+    if (status) params.append('status', status);
+    return this.request<any[]>(`/contributions?${params.toString()}`);
+  }
+
+  async getMyContributions() {
+    return this.request<any[]>('/contributions/my-contributions');
+  }
+
+  async getContribution(id: string) {
+    return this.request<any>(`/contributions/${id}`);
+  }
+
+  async createContribution(data: {
+    associationId: string;
+    amount: number;
+    donorId?: string;
+    donorName?: string;
+    donorEmail?: string;
+    type?: string;
+    method?: string;
+    notes?: string;
+  }) {
+    return this.request<any>('/contributions', { method: 'POST', body: data });
+  }
+
+  async approveContribution(id: string) {
+    return this.request<any>(`/contributions/${id}/approve`, { method: 'PUT' });
+  }
+
+  async rejectContribution(id: string, reason?: string) {
+    return this.request<any>(`/contributions/${id}/reject`, { method: 'PUT', body: { reason } });
+  }
+
+  async getContributionStats(associationId: string) {
+    return this.request<any>(`/contributions/stats?associationId=${associationId}`);
+  }
+
+  // Dispatches (Aid OUT to beneficiaries)
+  async getDispatches(associationId: string, status?: string) {
+    const params = new URLSearchParams({ associationId });
+    if (status) params.append('status', status);
+    return this.request<any[]>(`/dispatches?${params.toString()}`);
+  }
+
+  async getDispatch(id: string) {
+    return this.request<any>(`/dispatches/${id}`);
+  }
+
+  async createDispatch(data: {
+    associationId: string;
+    beneficiaryId: string;
+    amount: number;
+    familyId?: string;
+    aidType?: string;
+    notes?: string;
+  }) {
+    return this.request<any>('/dispatches', { method: 'POST', body: data });
+  }
+
+  async getDispatchStats(associationId: string) {
+    return this.request<any>(`/dispatches/stats?associationId=${associationId}`);
+  }
+
+  async getEligibleBeneficiaries(associationId: string) {
+    return this.request<any[]>(`/dispatches/eligible-beneficiaries?associationId=${associationId}`);
+  }
+
+  async getAssociationBudget(associationId: string) {
+    return this.request<any>(`/associations/${associationId}`).then(a => ({
+      budget: a.budget || 0,
+      name: a.name,
+    }));
+  }
+
   // Rules
   async getRules(associationId: string) {
     return this.request<any[]>(`/rules?associationId=${associationId}`);
