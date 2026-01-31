@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { DonateModal } from '@/components/modals/DonateModal';
 import { 
   Building2, 
   MapPin, 
@@ -34,6 +35,7 @@ export default function AssociationDetailPage() {
   const [association, setAssociation] = useState<any>(null);
   const [donations, setDonations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
 
   // Calculate stats from real data
   const stats = {
@@ -191,10 +193,17 @@ export default function AssociationDetailPage() {
                       if (!isAuthenticated) {
                         toast.info('Please sign in to make a donation');
                         navigate('/auth?redirect=' + encodeURIComponent(`/associations/${id}`));
-                      } else if (user?.associationId === id) {
-                        navigate('/dashboard/donations/new');
+                      } else if (user?.role?.toUpperCase() === 'ASSOCIATION_ADMIN' || user?.role?.toUpperCase() === 'ASSOCIATION_MEMBER') {
+                        // Association staff record donations through dashboard
+                        if (user?.associationId === id) {
+                          navigate('/dashboard/donations/new');
+                        } else {
+                          // Open donate modal for staff donating to other associations
+                          setIsDonateModalOpen(true);
+                        }
                       } else {
-                        toast.info('Contact this association directly to donate');
+                        // Donors and super admins can donate directly
+                        setIsDonateModalOpen(true);
                       }
                     }}
                   >
@@ -442,6 +451,22 @@ export default function AssociationDetailPage() {
       </main>
       
       <Footer />
+
+      {/* Donate Modal */}
+      <DonateModal
+        open={isDonateModalOpen}
+        onOpenChange={setIsDonateModalOpen}
+        associationId={id || ''}
+        associationName={association?.name || 'Association'}
+        onSuccess={() => {
+          // Refresh donations list
+          if (id) {
+            api.getDonations(id).then(data => {
+              setDonations(Array.isArray(data) ? data : []);
+            }).catch(console.error);
+          }
+        }}
+      />
     </div>
   );
 }

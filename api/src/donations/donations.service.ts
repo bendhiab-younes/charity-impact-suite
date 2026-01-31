@@ -27,6 +27,20 @@ export class DonationsService {
     });
   }
 
+  async findByDonor(donorId: string) {
+    return this.prisma.donation.findMany({
+      where: {
+        donorId,
+      },
+      include: {
+        beneficiary: true,
+        family: true,
+        association: { select: { id: true, name: true, logo: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findOne(id: string) {
     const donation = await this.prisma.donation.findUnique({
       where: { id },

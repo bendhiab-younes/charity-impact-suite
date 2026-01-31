@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
@@ -13,6 +13,11 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    // Association members cannot self-register - they must be added by an admin
+    if (dto.role === 'ASSOCIATION_MEMBER') {
+      throw new BadRequestException('Association members must be added by an association admin');
+    }
+
     const existingUser = await this.usersService.findByEmail(dto.email);
     if (existingUser) {
       throw new ConflictException('Email already registered');

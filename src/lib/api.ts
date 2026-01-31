@@ -140,6 +140,10 @@ class ApiClient {
     return this.request<any[]>(`/donations${query}`);
   }
 
+  async getMyDonations() {
+    return this.request<any[]>('/donations/my-donations');
+  }
+
   async getDonation(id: string) {
     return this.request<any>(`/donations/${id}`);
   }

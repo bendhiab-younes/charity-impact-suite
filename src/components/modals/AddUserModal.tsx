@@ -94,13 +94,17 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
         { value: 'ASSOCIATION_MEMBER', label: 'Association Member' },
       ];
 
+  const modalDescription = isSuperAdmin
+    ? 'Create a new user account for any role'
+    : 'Add a new member to your association. They will be able to record and dispatch donations.';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>{isSuperAdmin ? 'Add New User' : 'Add Association Member'}</DialogTitle>
           <DialogDescription>
-            Create a new user account for your association
+            {modalDescription}
           </DialogDescription>
         </DialogHeader>
 

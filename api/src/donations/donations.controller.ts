@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { DonationsService } from './donations.service';
@@ -31,6 +32,13 @@ export class DonationsController {
     @Query('status') status?: string,
   ) {
     return this.donationsService.findAll(associationId, status);
+  }
+
+  @Get('my-donations')
+  @Roles('DONOR', 'SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
+  @ApiOperation({ summary: 'Get all donations made by the current user' })
+  async findMyDonations(@Request() req: any) {
+    return this.donationsService.findByDonor(req.user.id);
   }
 
   @Get(':id')

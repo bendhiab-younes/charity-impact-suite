@@ -70,8 +70,7 @@ export default function AuthPage() {
 
   const roles = [
     { value: 'donor', label: 'Donor', description: 'Browse and donate to associations', icon: User },
-    { value: 'association_admin', label: 'Association Admin', description: 'Manage your charity association', icon: Building2 },
-    { value: 'association_member', label: 'Association Member', description: 'Help process donations and beneficiaries', icon: Users },
+    { value: 'association_admin', label: 'Association Admin', description: 'Create and manage your charity association', icon: Building2 },
   ];
 
   return (

@@ -42,6 +42,7 @@ const UsersManagement = () => {
 
   const userRole = currentUser?.role?.toUpperCase();
   const canEdit = userRole === 'ASSOCIATION_ADMIN' || userRole === 'SUPER_ADMIN';
+  const isSuperAdmin = userRole === 'SUPER_ADMIN';
 
   const handleView = (id: string) => {
     setSelectedUserId(id);
@@ -87,12 +88,14 @@ const UsersManagement = () => {
       <div className="p-6 lg:p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Users</h1>
-            <p className="text-muted-foreground">Manage team members and their access</p>
+            <h1 className="text-2xl font-bold text-foreground">{isSuperAdmin ? 'Users' : 'Team Members'}</h1>
+            <p className="text-muted-foreground">
+              {isSuperAdmin ? 'Manage all users and their access' : 'Manage your association team members'}
+            </p>
           </div>
           <Button onClick={() => setIsModalOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Add User
+            {isSuperAdmin ? 'Add User' : 'Add Member'}
           </Button>
         </div>
 
