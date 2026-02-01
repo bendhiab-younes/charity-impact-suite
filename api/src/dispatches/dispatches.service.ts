@@ -180,7 +180,11 @@ export class DispatchesService {
    * Get dispatch stats for an association
    */
   async getStats(associationId: string) {
-    const [total, byAidType] = await Promise.all([
+    const [association, total, byAidType] = await Promise.all([
+      this.prisma.association.findUnique({
+        where: { id: associationId },
+        select: { budget: true },
+      }),
       this.prisma.dispatch.aggregate({
         where: { associationId, status: 'COMPLETED' },
         _sum: { amount: true },
@@ -195,6 +199,7 @@ export class DispatchesService {
     ]);
 
     return {
+      budget: association?.budget || 0,
       totalAmount: total._sum.amount || 0,
       totalCount: total._count,
       byAidType: byAidType.map((item) => ({

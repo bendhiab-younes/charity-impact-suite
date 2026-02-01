@@ -15,7 +15,7 @@ const Reports = () => {
     
     donations.forEach(d => {
       const date = new Date(d.createdAt);
-      const key = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const key = date.toLocaleDateString('en-US', { month: 'short' });
       if (!months[key]) {
         months[key] = { donations: 0, beneficiaries: 0, transactions: 0 };
       }
@@ -23,14 +23,25 @@ const Reports = () => {
       months[key].transactions += 1;
     });
 
-    return Object.entries(months).slice(0, 3).map(([month, data]) => ({
+    return Object.entries(months).slice(0, 6).map(([month, data]) => ({
       month,
       ...data,
       beneficiaries: Math.floor(data.transactions * 1.5), // Approximation
     }));
   };
 
+  // Get beneficiary status distribution
+  const getBeneficiaryDistribution = () => {
+    const distribution: Record<string, number> = {};
+    beneficiaries.forEach(b => {
+      const status = b.status || 'UNKNOWN';
+      distribution[status] = (distribution[status] || 0) + 1;
+    });
+    return Object.entries(distribution).map(([status, count]) => ({ status, count }));
+  };
+
   const monthlyData = getMonthlyBreakdown();
+  const beneficiaryDistribution = getBeneficiaryDistribution();
   const avgDonation = donations.length > 0 
     ? Math.round(stats.totalDonations / donations.length) 
     : 0;
@@ -137,7 +148,7 @@ const Reports = () => {
           </Card>
         </div>
 
-        {/* Charts Placeholder */}
+        {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
           <Card>
             <CardHeader>
@@ -147,30 +158,75 @@ const Reports = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center bg-muted/30 rounded-lg">
-                <div className="text-center text-muted-foreground">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>Chart visualization</p>
-                  <p className="text-sm">Monthly donation trends</p>
+              {monthlyData.length > 0 ? (
+                <div className="h-64 flex items-end justify-around gap-2 px-4">
+                  {(() => {
+                    const maxDonation = Math.max(...monthlyData.map(d => d.donations), 1);
+                    return monthlyData.map((data, i) => (
+                      <div key={i} className="flex flex-col items-center flex-1 max-w-[60px]">
+                        <div className="w-full flex flex-col items-center justify-end h-48">
+                          <span className="text-xs font-medium mb-1">{data.donations.toLocaleString()}</span>
+                          <div 
+                            className="w-full bg-primary rounded-t transition-all duration-500"
+                            style={{ height: `${(data.donations / maxDonation) * 100}%`, minHeight: '8px' }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground mt-2">{data.month}</span>
+                      </div>
+                    ));
+                  })()}
                 </div>
-              </div>
+              ) : (
+                <div className="h-64 flex items-center justify-center bg-muted/30 rounded-lg">
+                  <div className="text-center text-muted-foreground">
+                    <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No donation data yet</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Beneficiary Distribution
+                Beneficiary Status Distribution
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center bg-muted/30 rounded-lg">
-                <div className="text-center text-muted-foreground">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>Chart visualization</p>
-                  <p className="text-sm">Aid distribution by category</p>
+              {beneficiaryDistribution.length > 0 ? (
+                <div className="h-64 space-y-4 py-4">
+                  {(() => {
+                    const maxCount = Math.max(...beneficiaryDistribution.map(d => d.count), 1);
+                    const statusColors: Record<string, string> = {
+                      'ELIGIBLE': 'bg-green-500',
+                      'INELIGIBLE': 'bg-red-500',
+                      'PENDING_REVIEW': 'bg-yellow-500',
+                    };
+                    return beneficiaryDistribution.map((data, i) => (
+                      <div key={i} className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="capitalize">{data.status.replace('_', ' ').toLowerCase()}</span>
+                          <span className="font-medium">{data.count}</span>
+                        </div>
+                        <div className="h-6 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${statusColors[data.status] || 'bg-primary'}`}
+                            style={{ width: `${(data.count / maxCount) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    ));
+                  })()}
                 </div>
-              </div>
+              ) : (
+                <div className="h-64 flex items-center justify-center bg-muted/30 rounded-lg">
+                  <div className="text-center text-muted-foreground">
+                    <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No beneficiary data yet</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

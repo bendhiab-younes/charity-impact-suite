@@ -38,6 +38,7 @@ export interface Beneficiary {
   id: string;
   associationId: string;
   familyId: string;
+  nationalId?: string;
   firstName: string;
   lastName: string;
   email?: string;

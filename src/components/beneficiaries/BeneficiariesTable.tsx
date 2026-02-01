@@ -65,6 +65,7 @@ export function BeneficiariesTable({ beneficiaries, onView, onEdit, onUpdateStat
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="font-medium">Name</TableHead>
+            <TableHead className="font-medium">National ID</TableHead>
             <TableHead className="font-medium">Contact</TableHead>
             <TableHead className="font-medium">Status</TableHead>
             <TableHead className="font-medium">Last Donation</TableHead>
@@ -80,6 +81,9 @@ export function BeneficiariesTable({ beneficiaries, onView, onEdit, onUpdateStat
                   <p className="font-medium">{beneficiary.firstName} {beneficiary.lastName}</p>
                   <p className="text-xs text-muted-foreground">ID: {beneficiary.id.slice(0, 8)}</p>
                 </div>
+              </TableCell>
+              <TableCell className="text-sm font-mono">
+                {beneficiary.nationalId || '—'}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 <div>

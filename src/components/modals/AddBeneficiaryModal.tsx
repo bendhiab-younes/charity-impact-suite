@@ -30,6 +30,7 @@ export function AddBeneficiaryModal({ open, onOpenChange, onSuccess }: AddBenefi
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(false);
 
   const [formData, setFormData] = useState({
+    nationalId: '',
     firstName: '',
     lastName: '',
     phone: '',
@@ -57,6 +58,7 @@ export function AddBeneficiaryModal({ open, onOpenChange, onSuccess }: AddBenefi
 
   const resetForm = () => {
     setFormData({
+      nationalId: '',
       firstName: '',
       lastName: '',
       phone: '',
@@ -88,6 +90,7 @@ export function AddBeneficiaryModal({ open, onOpenChange, onSuccess }: AddBenefi
     try {
       await api.createBeneficiary({
         associationId: user.associationId,
+        nationalId: formData.nationalId || undefined,
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone || undefined,
@@ -118,6 +121,17 @@ export function AddBeneficiaryModal({ open, onOpenChange, onSuccess }: AddBenefi
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="nationalId">National ID (CIN)</Label>
+            <Input
+              id="nationalId"
+              value={formData.nationalId}
+              onChange={(e) => setFormData(prev => ({ ...prev, nationalId: e.target.value }))}
+              placeholder="8-digit national ID"
+              maxLength={8}
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName">First Name *</Label>

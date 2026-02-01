@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { FileText, Download, Search, Filter, Loader2 } from "lucide-react";
 import { useAuditLogs } from "@/hooks/useAuditLogs";
+import { toast } from "sonner";
 
 const getActionType = (action: string): string => {
   const lowerAction = action.toLowerCase();
@@ -27,6 +28,37 @@ const typeColors: Record<string, string> = {
 const AuditLog = () => {
   const { logs, isLoading, error } = useAuditLogs();
   const [searchTerm, setSearchTerm] = useState("");
+
+  const handleExport = () => {
+    if (logs.length === 0) {
+      toast.error('No logs to export');
+      return;
+    }
+    
+    const headers = ['Date', 'Action', 'User', 'Details'];
+    const rows = logs.map(log => [
+      new Date(log.createdAt).toLocaleString(),
+      log.action,
+      log.user?.name || 'Unknown User',
+      log.details || '',
+    ]);
+    
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `audit-log-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success('Audit log exported to CSV');
+  };
   
   return (
     <DashboardLayout>
@@ -36,7 +68,7 @@ const AuditLog = () => {
             <h1 className="text-2xl font-bold text-foreground">Audit Log</h1>
             <p className="text-muted-foreground">Complete activity history for transparency and compliance</p>
           </div>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport} disabled={logs.length === 0}>
             <Download className="h-4 w-4 mr-2" />
             Export Log
           </Button>

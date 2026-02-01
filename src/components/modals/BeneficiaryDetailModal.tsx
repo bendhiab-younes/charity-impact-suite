@@ -35,6 +35,7 @@ export function BeneficiaryDetailModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editData, setEditData] = useState({
+    nationalId: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -52,6 +53,7 @@ export function BeneficiaryDetailModal({
         const data = await api.getBeneficiary(beneficiaryId);
         setBeneficiary(data);
         setEditData({
+          nationalId: data.nationalId || '',
           firstName: data.firstName || '',
           lastName: data.lastName || '',
           email: data.email || '',
@@ -154,6 +156,11 @@ export function BeneficiaryDetailModal({
                 <Badge variant={getStatusVariant(beneficiary.status) as any}>
                   {beneficiary.status?.replace('_', ' ')}
                 </Badge>
+                {beneficiary.nationalId && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    CIN: {beneficiary.nationalId}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -224,6 +231,17 @@ export function BeneficiaryDetailModal({
           </div>
         ) : (
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nationalId">National ID (CIN)</Label>
+              <Input
+                id="nationalId"
+                value={editData.nationalId}
+                onChange={(e) => setEditData(prev => ({ ...prev, nationalId: e.target.value }))}
+                placeholder="8-digit national ID"
+                maxLength={8}
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
