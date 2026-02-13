@@ -15,11 +15,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface EligibleBeneficiary {
   id: string;
+  nationalId?: string;
   firstName: string;
   lastName: string;
   status: string;
   totalReceived: number;
-  family: {
+  canReceive?: boolean;
+  cooldownEnds?: string;
+  family?: {
     id: string;
     name: string;
     memberCount: number;
@@ -47,10 +50,14 @@ const NewDispatch = () => {
       setIsLoading(true);
       try {
         const [eligibleData, statsData] = await Promise.all([
-          api.getEligibleBeneficiaries(user.associationId),
-          api.getDispatchStats(user.associationId),
+          api.getEligibleBeneficiaries().catch(() => []),
+          api.getDonationStats().catch(() => ({ budget: 0 })),
         ]);
-        setEligibleBeneficiaries(Array.isArray(eligibleData) ? eligibleData : []);
+        // Filter to only those who can actually receive aid
+        const actuallyEligible = Array.isArray(eligibleData) 
+          ? eligibleData.filter((b: any) => b.canReceive !== false)
+          : [];
+        setEligibleBeneficiaries(actuallyEligible);
         setBudget(statsData?.budget || 0);
       } catch (err) {
         console.error('Failed to load data', err);
@@ -184,7 +191,8 @@ const NewDispatch = () => {
                             <div className="flex flex-col">
                               <span>{b.firstName} {b.lastName}</span>
                               <span className="text-xs text-muted-foreground">
-                                {b.family.name} • {b.family.memberCount} members • Received: {b.totalReceived.toLocaleString()} TND
+                                {b.family ? `${b.family.name} • ${b.family.memberCount} members • ` : ''}
+                                Received: {b.totalReceived.toLocaleString()} TND
                               </span>
                             </div>
                           </SelectItem>
@@ -192,7 +200,7 @@ const NewDispatch = () => {
                       )}
                     </SelectContent>
                   </Select>
-                  {selectedBeneficiary && (
+                  {selectedBeneficiary && selectedBeneficiary.family && (
                     <p className="text-sm text-muted-foreground">
                       Family: {selectedBeneficiary.family.name} ({selectedBeneficiary.family.memberCount} members)
                     </p>

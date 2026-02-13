@@ -15,6 +15,7 @@ async function main() {
       phone: '+216 71 000 001',
       address: 'Avenue Habib Bourguiba, Tunis 1000',
       status: 'ACTIVE',
+      budget: 1800, // Starting budget from approved contributions
     },
   });
 
@@ -26,6 +27,7 @@ async function main() {
       phone: '+216 74 000 002',
       address: 'Rue de la République, Sfax 3000',
       status: 'ACTIVE',
+      budget: 500,
     },
   });
 
@@ -98,51 +100,58 @@ async function main() {
       address: 'La Marsa, Tunis',
       status: 'COOLDOWN',
       totalReceived: 300,
-      lastDonationDate: new Date('2024-01-15'),
+      lastDonationDate: new Date('2025-01-15'),
       associationId: association1.id,
     },
   });
 
   // Create beneficiaries with National IDs
-  await prisma.beneficiary.createMany({
-    data: [
-      {
-        nationalId: '12345678',
-        firstName: 'Khaled',
-        lastName: 'Ben Ali',
-        email: 'khaled.benali@email.tn',
-        phone: '+216 20 000 001',
-        status: 'ELIGIBLE',
-        familyId: family1.id,
-        associationId: association1.id,
-      },
-      {
-        nationalId: '23456789',
-        firstName: 'Amira',
-        lastName: 'Ben Ali',
-        status: 'ELIGIBLE',
-        familyId: family1.id,
-        associationId: association1.id,
-      },
-      {
-        nationalId: '34567890',
-        firstName: 'Youssef',
-        lastName: 'Gharbi',
-        email: 'youssef.gharbi@email.tn',
-        status: 'ELIGIBLE',
-        familyId: family2.id,
-        associationId: association1.id,
-      },
-      {
-        nationalId: '45678901',
-        firstName: 'Leila',
-        lastName: 'Mejri',
-        status: 'PENDING_REVIEW',
-        eligibilityNotes: 'En attente de vérification des revenus',
-        familyId: family3.id,
-        associationId: association1.id,
-      },
-    ],
+  const beneficiary1 = await prisma.beneficiary.create({
+    data: {
+      nationalId: '12345678',
+      firstName: 'Khaled',
+      lastName: 'Ben Ali',
+      email: 'khaled.benali@email.tn',
+      phone: '+216 20 000 001',
+      status: 'ELIGIBLE',
+      familyId: family1.id,
+      associationId: association1.id,
+    },
+  });
+
+  const beneficiary2 = await prisma.beneficiary.create({
+    data: {
+      nationalId: '23456789',
+      firstName: 'Amira',
+      lastName: 'Ben Ali',
+      status: 'ELIGIBLE',
+      familyId: family1.id,
+      associationId: association1.id,
+    },
+  });
+
+  const beneficiary3 = await prisma.beneficiary.create({
+    data: {
+      nationalId: '34567890',
+      firstName: 'Youssef',
+      lastName: 'Gharbi',
+      email: 'youssef.gharbi@email.tn',
+      status: 'ELIGIBLE',
+      familyId: family2.id,
+      associationId: association1.id,
+    },
+  });
+
+  const beneficiary4 = await prisma.beneficiary.create({
+    data: {
+      nationalId: '45678901',
+      firstName: 'Leila',
+      lastName: 'Mejri',
+      status: 'PENDING_REVIEW',
+      eligibilityNotes: 'En attente de vérification des revenus',
+      familyId: family3.id,
+      associationId: association1.id,
+    },
   });
 
   // Create donation rules
@@ -158,81 +167,32 @@ async function main() {
         associationId: association1.id,
       },
       {
-        name: 'Montant maximum mensuel',
-        description: 'Montant maximum de don par famille par mois',
+        name: 'Montant maximum par membre',
+        description: 'Montant maximum de don par membre de famille',
         type: 'AMOUNT',
-        value: 500,
+        value: 100,
         unit: 'TND',
         isActive: true,
         associationId: association1.id,
       },
       {
-        name: 'Seuil de revenu',
-        description: 'Revenu annuel maximum du ménage pour être éligible',
+        name: 'Membres minimum',
+        description: 'Nombre minimum de membres pour être éligible',
         type: 'ELIGIBILITY',
-        value: 15000,
-        unit: 'TND',
+        value: 2,
+        unit: 'members',
         isActive: true,
         associationId: association1.id,
       },
     ],
   });
 
-  // Create donations (legacy - keeping for backwards compatibility)
-  await prisma.donation.createMany({
-    data: [
-      {
-        amount: 150,
-        currency: 'TND',
-        status: 'COMPLETED',
-        type: 'ONE_TIME',
-        method: 'CASH',
-        associationId: association1.id,
-        donorId: donor.id,
-        familyId: family1.id,
-        processedAt: new Date('2024-01-10'),
-      },
-      {
-        amount: 200,
-        currency: 'TND',
-        status: 'COMPLETED',
-        type: 'ONE_TIME',
-        method: 'BANK_TRANSFER',
-        associationId: association1.id,
-        donorId: donor.id,
-        familyId: family2.id,
-        processedAt: new Date('2024-01-12'),
-      },
-      {
-        amount: 100,
-        currency: 'TND',
-        status: 'PENDING',
-        type: 'ONE_TIME',
-        method: 'CASH',
-        notes: 'Don en attente d\'approbation',
-        associationId: association1.id,
-        familyId: family1.id,
-      },
-      {
-        amount: 300,
-        currency: 'TND',
-        status: 'COMPLETED',
-        type: 'ONE_TIME',
-        method: 'CASH',
-        associationId: association1.id,
-        familyId: family3.id,
-        processedAt: new Date('2024-01-15'),
-      },
-    ],
-  });
-
-  // Get beneficiaries for dispatches
-  const beneficiaries = await prisma.beneficiary.findMany({
-    where: { associationId: association1.id },
-  });
-
-  // Create contributions (new system - money IN from donors)
-  const contribution1 = await prisma.contribution.create({
+  // ==========================================================================
+  // CONTRIBUTIONS (Money IN from donors)
+  // ==========================================================================
+  
+  // Approved contributions (added to budget)
+  await prisma.contribution.create({
     data: {
       amount: 500,
       currency: 'TND',
@@ -243,10 +203,11 @@ async function main() {
       associationId: association1.id,
       donorId: donor.id,
       approvedAt: new Date('2025-01-20'),
+      approvedBy: associationAdmin.id,
     },
   });
 
-  const contribution2 = await prisma.contribution.create({
+  await prisma.contribution.create({
     data: {
       amount: 1000,
       currency: 'TND',
@@ -257,9 +218,25 @@ async function main() {
       associationId: association1.id,
       donorId: donor.id,
       approvedAt: new Date('2025-01-22'),
+      approvedBy: associationAdmin.id,
     },
   });
 
+  await prisma.contribution.create({
+    data: {
+      amount: 750,
+      currency: 'TND',
+      status: 'APPROVED',
+      type: 'RECURRING',
+      method: 'CARD',
+      associationId: association1.id,
+      donorId: donor.id,
+      approvedAt: new Date('2025-01-25'),
+      approvedBy: associationMember.id,
+    },
+  });
+
+  // Pending contribution (anonymous donor)
   await prisma.contribution.create({
     data: {
       amount: 250,
@@ -274,72 +251,85 @@ async function main() {
     },
   });
 
-  await prisma.contribution.create({
+  // ==========================================================================
+  // DONATIONS (Aid OUT to beneficiaries - from budget)
+  // ==========================================================================
+  
+  // Completed donations
+  await prisma.donation.create({
     data: {
-      amount: 750,
+      amount: 200,
       currency: 'TND',
-      status: 'APPROVED',
-      type: 'RECURRING',
-      method: 'CARD',
+      status: 'COMPLETED',
+      aidType: 'CASH',
+      notes: 'Aide mensuelle famille Ben Ali',
       associationId: association1.id,
-      donorId: donor.id,
-      approvedAt: new Date('2025-01-25'),
+      beneficiaryId: beneficiary1.id,
+      familyId: family1.id,
+      processedById: associationAdmin.id,
     },
   });
 
-  // Update association budget (sum of approved contributions minus dispatched)
-  // Total approved: 500 + 1000 + 750 = 2250
-  // Will dispatch 400, so budget = 1850
-  await prisma.association.update({
-    where: { id: association1.id },
-    data: { budget: 1850 },
+  await prisma.donation.create({
+    data: {
+      amount: 150,
+      currency: 'TND',
+      status: 'COMPLETED',
+      aidType: 'FOOD',
+      notes: 'Colis alimentaire',
+      associationId: association1.id,
+      beneficiaryId: beneficiary3.id,
+      familyId: family2.id,
+      processedById: associationMember.id,
+    },
   });
 
-  // Create dispatches (new system - aid OUT to beneficiaries)
-  if (beneficiaries.length > 0) {
-    await prisma.dispatch.create({
-      data: {
-        amount: 200,
-        currency: 'TND',
-        status: 'COMPLETED',
-        aidType: 'CASH',
-        notes: 'Aide mensuelle famille Ben Ali',
-        associationId: association1.id,
-        beneficiaryId: beneficiaries[0].id,
-        familyId: family1.id,
-        processedById: associationAdmin.id,
-        completedAt: new Date('2025-01-21'),
-      },
-    });
+  await prisma.donation.create({
+    data: {
+      amount: 100,
+      currency: 'TND',
+      status: 'COMPLETED',
+      aidType: 'MEDICAL',
+      notes: 'Frais médicaux',
+      associationId: association1.id,
+      beneficiaryId: beneficiary2.id,
+      familyId: family1.id,
+      processedById: associationAdmin.id,
+    },
+  });
 
-    await prisma.dispatch.create({
-      data: {
-        amount: 150,
-        currency: 'TND',
-        status: 'COMPLETED',
-        aidType: 'FOOD',
-        notes: 'Colis alimentaire',
+  // ==========================================================================
+  // ACTIVITY LOGS (for transparency)
+  // ==========================================================================
+  
+  await prisma.activityLog.createMany({
+    data: [
+      {
+        action: 'CONTRIBUTION_APPROVED',
+        details: 'Approved contribution of 500 TND from Mohamed Trabelsi',
+        entityType: 'CONTRIBUTION',
+        entityId: 'contrib-1',
         associationId: association1.id,
-        beneficiaryId: beneficiaries[2]?.id || beneficiaries[0].id,
-        familyId: family2.id,
-        processedById: associationMember.id,
-        completedAt: new Date('2025-01-23'),
+        userId: associationAdmin.id,
       },
-    });
-
-    await prisma.dispatch.create({
-      data: {
-        amount: 50,
-        currency: 'TND',
-        status: 'PENDING',
-        aidType: 'MEDICAL',
-        notes: 'Frais médicaux - en attente',
+      {
+        action: 'DONATION_CREATED',
+        details: 'Created donation of 200 TND to Khaled Ben Ali (Famille Ben Ali)',
+        entityType: 'DONATION',
+        entityId: 'donation-1',
         associationId: association1.id,
-        beneficiaryId: beneficiaries[1]?.id || beneficiaries[0].id,
-        familyId: family1.id,
+        userId: associationAdmin.id,
       },
-    });
-  }
+      {
+        action: 'BENEFICIARY_ADDED',
+        details: 'Added new beneficiary: Khaled Ben Ali',
+        entityType: 'BENEFICIARY',
+        entityId: beneficiary1.id,
+        associationId: association1.id,
+        userId: associationAdmin.id,
+      },
+    ],
+  });
 
   console.log('✅ Database seeded successfully!');
   console.log('\n📋 Demo Accounts:');
@@ -347,10 +337,12 @@ async function main() {
   console.log('  Association Admin:  admin@espoir-tunisie.org / password123');
   console.log('  Association Member: membre@espoir-tunisie.org / password123');
   console.log('  Donor:              donateur@email.tn / password123');
-  console.log('\n💰 Contribution/Dispatch Data:');
-  console.log('  Association Budget: 1850 TND');
-  console.log('  4 Contributions (3 approved, 1 pending)');
-  console.log('  3 Dispatches (2 completed, 1 pending)');
+  console.log('\n💰 System Overview:');
+  console.log('  Association Budget: 1800 TND');
+  console.log('  Total Contributions: 2500 TND (2250 approved + 250 pending)');
+  console.log('  Total Donations: 450 TND');
+  console.log('\n🔢 National IDs for testing:');
+  console.log('  12345678, 23456789, 34567890, 45678901');
 }
 
 main()

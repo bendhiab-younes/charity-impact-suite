@@ -132,38 +132,6 @@ class ApiClient {
     return this.request<any>(`/families/${id}`, { method: 'DELETE' });
   }
 
-  // Donations
-  async getDonations(associationId: string, status?: string) {
-    const query = status 
-      ? `?associationId=${associationId}&status=${status}`
-      : `?associationId=${associationId}`;
-    return this.request<any[]>(`/donations${query}`);
-  }
-
-  async getMyDonations() {
-    return this.request<any[]>('/donations/my-donations');
-  }
-
-  async getDonation(id: string) {
-    return this.request<any>(`/donations/${id}`);
-  }
-
-  async createDonation(data: any) {
-    return this.request<any>('/donations', { method: 'POST', body: data });
-  }
-
-  async approveDonation(id: string) {
-    return this.request<any>(`/donations/${id}/approve`, { method: 'PATCH' });
-  }
-
-  async rejectDonation(id: string, reason?: string) {
-    return this.request<any>(`/donations/${id}/reject`, { method: 'PATCH', body: { reason } });
-  }
-
-  async completeDonation(id: string) {
-    return this.request<any>(`/donations/${id}/complete`, { method: 'PATCH' });
-  }
-
   // Contributions (Money IN from donors)
   async getContributions(associationId: string, status?: string) {
     const params = new URLSearchParams({ associationId });
@@ -204,18 +172,19 @@ class ApiClient {
     return this.request<any>(`/contributions/stats?associationId=${associationId}`);
   }
 
-  // Dispatches (Aid OUT to beneficiaries)
-  async getDispatches(associationId: string, status?: string) {
-    const params = new URLSearchParams({ associationId });
+  // Donations (Aid OUT to beneficiaries) - formerly "Dispatches"
+  async getDonations(associationId: string, status?: string) {
+    const params = new URLSearchParams();
     if (status) params.append('status', status);
-    return this.request<any[]>(`/dispatches?${params.toString()}`);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<any[]>(`/donations${query}`);
   }
 
-  async getDispatch(id: string) {
-    return this.request<any>(`/dispatches/${id}`);
+  async getDonation(id: string) {
+    return this.request<any>(`/donations/${id}`);
   }
 
-  async createDispatch(data: {
+  async createDonation(data: {
     associationId: string;
     beneficiaryId: string;
     amount: number;
@@ -223,15 +192,19 @@ class ApiClient {
     aidType?: string;
     notes?: string;
   }) {
-    return this.request<any>('/dispatches', { method: 'POST', body: data });
+    return this.request<any>('/donations', { method: 'POST', body: data });
   }
 
-  async getDispatchStats(associationId: string) {
-    return this.request<any>(`/dispatches/stats?associationId=${associationId}`);
+  async cancelDonation(id: string) {
+    return this.request<any>(`/donations/${id}/cancel`, { method: 'PATCH' });
   }
 
-  async getEligibleBeneficiaries(associationId: string) {
-    return this.request<any[]>(`/dispatches/eligible-beneficiaries?associationId=${associationId}`);
+  async getDonationStats() {
+    return this.request<any>(`/donations/stats`);
+  }
+
+  async getEligibleBeneficiaries() {
+    return this.request<any[]>(`/donations/eligible-beneficiaries`);
   }
 
   async getAssociationBudget(associationId: string) {
@@ -239,6 +212,19 @@ class ApiClient {
       budget: a.budget || 0,
       name: a.name,
     }));
+  }
+
+  // Legacy aliases for backward compatibility
+  async getDispatches(associationId: string, status?: string) {
+    return this.getDonations(associationId, status);
+  }
+
+  async createDispatch(data: any) {
+    return this.createDonation(data);
+  }
+
+  async getDispatchStats() {
+    return this.getDonationStats();
   }
 
   // Rules

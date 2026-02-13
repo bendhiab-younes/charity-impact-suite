@@ -11,7 +11,6 @@ import { RulesModule } from './rules/rules.module';
 import { MobileModule } from './mobile/mobile.module';
 import { AuditModule } from './audit/audit.module';
 import { ContributionsModule } from './contributions/contributions.module';
-import { DispatchesModule } from './dispatches/dispatches.module';
 
 @Module({
   imports: [
@@ -29,7 +28,6 @@ import { DispatchesModule } from './dispatches/dispatches.module';
     MobileModule,
     AuditModule,
     ContributionsModule,
-    DispatchesModule,
   ],
 })
 export class AppModule {}

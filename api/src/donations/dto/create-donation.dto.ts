@@ -1,65 +1,43 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsEnum, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, Min } from 'class-validator';
 
-export enum DonationStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  COMPLETED = 'COMPLETED',
-}
-
-export enum DonationType {
-  ONE_TIME = 'ONE_TIME',
-  RECURRING = 'RECURRING',
-}
-
-export enum PaymentMethod {
-  CARD = 'CARD',
-  BANK_TRANSFER = 'BANK_TRANSFER',
-  CASH = 'CASH',
-  CHECK = 'CHECK',
-}
-
+/**
+ * DTO for creating a donation (aid OUT to beneficiaries)
+ */
 export class CreateDonationDto {
-  @ApiProperty({ example: 100 })
+  @ApiProperty({ example: 100, description: 'Amount to give to the beneficiary' })
   @IsNumber()
   @Min(1)
   amount: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Association ID' })
   @IsString()
   @IsNotEmpty()
   associationId: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ description: 'Beneficiary receiving the donation' })
   @IsString()
-  @IsOptional()
-  donorId?: string;
+  @IsNotEmpty()
+  beneficiaryId: string;
 
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  beneficiaryId?: string;
-
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: 'Family ID (auto-resolved from beneficiary if not provided)' })
   @IsString()
   @IsOptional()
   familyId?: string;
 
-  @ApiProperty({ default: 'TND' })
+  @ApiProperty({ default: 'TND', required: false })
   @IsString()
   @IsOptional()
   currency?: string;
 
-  @ApiProperty({ enum: DonationType, default: DonationType.ONE_TIME })
-  @IsEnum(DonationType)
+  @ApiProperty({ 
+    default: 'CASH', 
+    required: false,
+    description: 'Type of aid: CASH, FOOD, CLOTHING, MEDICAL, EDUCATION, OTHER'
+  })
+  @IsString()
   @IsOptional()
-  type?: DonationType;
-
-  @ApiProperty({ enum: PaymentMethod, default: PaymentMethod.CASH })
-  @IsEnum(PaymentMethod)
-  @IsOptional()
-  method?: PaymentMethod;
+  aidType?: string;
 
   @ApiProperty({ required: false })
   @IsString()

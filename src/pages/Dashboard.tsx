@@ -313,7 +313,7 @@ function AssociationDashboard() {
             <Link to="/dashboard/reports">View Reports</Link>
           </Button>
           <Button variant="hero" asChild>
-            <Link to="/dashboard/donations/new">Record Donation</Link>
+            <Link to="/dashboard/donations/new">Record Contribution</Link>
           </Button>
         </div>
       </div>

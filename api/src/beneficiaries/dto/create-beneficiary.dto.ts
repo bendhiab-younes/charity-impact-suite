@@ -28,6 +28,11 @@ export class CreateBeneficiaryDto {
   @IsNotEmpty()
   familyId: string;
 
+  @ApiProperty({ required: false, example: '12345678', description: 'National ID (CIN)' })
+  @IsString()
+  @IsOptional()
+  nationalId?: string;
+
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()

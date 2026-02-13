@@ -8,6 +8,7 @@ import {
   Body,
   Param,
   Query,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -28,8 +29,9 @@ export class BeneficiariesController {
   @Get()
   @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
   @ApiOperation({ summary: 'Get all beneficiaries for an association' })
-  async findAll(@Query('associationId') associationId: string) {
-    return this.beneficiariesService.findAll(associationId);
+  async findAll(@Query('associationId') associationId: string, @Request() req: any) {
+    const targetAssociationId = req.user.role === 'SUPER_ADMIN' ? associationId : req.user.associationId;
+    return this.beneficiariesService.findAll(targetAssociationId);
   }
 
   @Get(':id')
@@ -42,7 +44,10 @@ export class BeneficiariesController {
   @Post()
   @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
   @ApiOperation({ summary: 'Create a new beneficiary' })
-  async create(@Body() dto: CreateBeneficiaryDto) {
+  async create(@Body() dto: CreateBeneficiaryDto, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.associationId) {
+      dto.associationId = req.user.associationId;
+    }
     return this.beneficiariesService.create(dto);
   }
 

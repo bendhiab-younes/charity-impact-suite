@@ -3,6 +3,15 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+/**
+ * useDonations - Hook for managing aid OUT to beneficiaries
+ * 
+ * In the new schema:
+ * - Donation = Aid given OUT to beneficiaries (deducts from budget)
+ * - Contribution = Money received IN from donors (adds to budget)
+ * 
+ * This hook handles Donations (Aid OUT)
+ */
 export function useDonations() {
   const { user } = useAuth();
   const [donations, setDonations] = useState<any[]>([]);
@@ -32,45 +41,49 @@ export function useDonations() {
     fetchDonations();
   }, [fetchDonations]);
 
-  const approveDonation = async (id: string) => {
+  const createDonation = async (data: {
+    beneficiaryId: string;
+    amount: number;
+    aidType?: string;
+    notes?: string;
+  }) => {
+    if (!user?.associationId) {
+      toast.error('No association selected');
+      return;
+    }
+
     try {
-      await api.approveDonation(id);
-      setDonations(prev => 
-        prev.map(d => d.id === id ? { ...d, status: 'APPROVED' } : d)
-      );
-      toast.success('Donation approved successfully');
+      const donation = await api.createDonation({
+        ...data,
+        associationId: user.associationId,
+      });
+      setDonations(prev => [donation, ...prev]);
+      toast.success('Aid given successfully');
+      return donation;
     } catch (err: any) {
-      toast.error(err.message || 'Failed to approve donation');
+      toast.error(err.message || 'Failed to give aid');
+      throw err;
     }
   };
 
-  const rejectDonation = async (id: string) => {
+  const cancelDonation = async (id: string) => {
     try {
-      await api.rejectDonation(id);
+      await api.cancelDonation(id);
       setDonations(prev => 
-        prev.map(d => d.id === id ? { ...d, status: 'REJECTED' } : d)
+        prev.map(d => d.id === id ? { ...d, status: 'CANCELLED' } : d)
       );
-      toast.error('Donation rejected');
+      toast.success('Donation cancelled and budget restored');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to reject donation');
-    }
-  };
-
-  const completeDonation = async (id: string) => {
-    try {
-      await api.completeDonation(id);
-      setDonations(prev => 
-        prev.map(d => d.id === id ? { ...d, status: 'COMPLETED' } : d)
-      );
-      toast.success('Donation marked as completed');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to complete donation');
+      toast.error(err.message || 'Failed to cancel donation');
     }
   };
 
   const pendingCount = donations.filter(d => d.status === 'PENDING').length;
   const completedCount = donations.filter(d => d.status === 'COMPLETED').length;
-  const approvedCount = donations.filter(d => d.status === 'APPROVED').length;
+  const cancelledCount = donations.filter(d => d.status === 'CANCELLED').length;
+  const totalAmount = donations
+    .filter(d => d.status === 'COMPLETED')
+    .reduce((sum, d) => sum + d.amount, 0);
 
   return {
     donations,
@@ -78,10 +91,10 @@ export function useDonations() {
     error,
     pendingCount,
     completedCount,
-    approvedCount,
-    approveDonation,
-    rejectDonation,
-    completeDonation,
+    cancelledCount,
+    totalAmount,
+    createDonation,
+    cancelDonation,
     refetch: fetchDonations,
   };
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,33 +15,15 @@ import { toast } from "sonner";
 const NewDonation = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [beneficiaries, setBeneficiaries] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
-    beneficiaryId: '',
+    donorName: '',
     type: '',
     amount: '',
     method: 'CASH',
     notes: '',
   });
-
-  useEffect(() => {
-    const loadBeneficiaries = async () => {
-      if (!user?.associationId) return;
-      setIsLoading(true);
-      try {
-        const data = await api.getBeneficiaries(user.associationId);
-        setBeneficiaries(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error('Failed to load beneficiaries', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadBeneficiaries();
-  }, [user?.associationId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,19 +34,18 @@ const NewDonation = () => {
     
     setIsSubmitting(true);
     try {
-      await api.createDonation({
+      await api.createContribution({
         associationId: user.associationId,
-        beneficiaryId: formData.beneficiaryId || undefined,
         amount: parseFloat(formData.amount),
-        currency: 'TND',
         type: formData.type || 'ONE_TIME',
         method: formData.method,
+        donorName: formData.donorName || undefined,
         notes: formData.notes || undefined,
       });
-      toast.success('Donation recorded successfully');
+      toast.success('Contribution recorded successfully');
       navigate('/dashboard/donations');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to create donation');
+      toast.error(err.message || 'Failed to record contribution');
     } finally {
       setIsSubmitting(false);
     }
@@ -78,8 +59,8 @@ const NewDonation = () => {
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Donations
           </Link>
-          <h1 className="text-2xl font-bold text-foreground">Record New Donation</h1>
-          <p className="text-muted-foreground">Register a new donation for a beneficiary</p>
+          <h1 className="text-2xl font-bold text-foreground">Record New Contribution</h1>
+          <p className="text-muted-foreground">Record an incoming donation/contribution to your association</p>
         </div>
 
         <div className="max-w-2xl">
@@ -87,30 +68,21 @@ const NewDonation = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Heart className="h-5 w-5" />
-                Donation Details
+                Contribution Details
               </CardTitle>
-              <CardDescription>Fill in the donation information below</CardDescription>
+              <CardDescription>Fill in the contribution information below</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Beneficiary Selection */}
+                {/* Donor Name (Optional) */}
                 <div className="space-y-2">
-                  <Label htmlFor="beneficiary">Beneficiary (Optional)</Label>
-                  <Select 
-                    value={formData.beneficiaryId} 
-                    onValueChange={(v) => setFormData(prev => ({ ...prev, beneficiaryId: v }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoading ? "Loading..." : "Select a beneficiary"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {beneficiaries.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.firstName} {b.lastName} {b.family?.name ? `(${b.family.name})` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="donorName">Donor Name (Optional)</Label>
+                  <Input
+                    id="donorName"
+                    placeholder="Enter donor name (leave empty for anonymous)"
+                    value={formData.donorName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, donorName: e.target.value }))}
+                  />
                 </div>
 
                 {/* Donation Type */}
@@ -176,10 +148,10 @@ const NewDonation = () => {
                   />
                 </div>
 
-                {/* Eligibility Check Notice */}
+                {/* Info Notice */}
                 <div className="p-4 bg-muted/50 rounded-lg border">
                   <p className="text-sm text-muted-foreground">
-                    <strong className="text-foreground">Note:</strong> The system will automatically verify beneficiary eligibility based on configured rules before approving this donation.
+                    <strong className="text-foreground">Note:</strong> Contributions will appear as pending until approved by an association administrator.
                   </p>
                 </div>
 
@@ -192,7 +164,7 @@ const NewDonation = () => {
                         Submitting...
                       </>
                     ) : (
-                      'Submit Donation'
+                      'Submit Contribution'
                     )}
                   </Button>
                   <Button variant="outline" type="button" asChild>

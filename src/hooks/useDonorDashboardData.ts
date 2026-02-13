@@ -28,13 +28,13 @@ export function useDonorDashboardData(): DonorDashboardData {
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [associationsData, donationsData] = await Promise.all([
+      const [associationsData, contributionsData] = await Promise.all([
         api.getAssociations(),
-        api.getMyDonations(),
+        api.getMyContributions().catch(() => []), // Donors see their contributions
       ]);
 
       setAssociations(Array.isArray(associationsData) ? associationsData : []);
-      setMyDonations(Array.isArray(donationsData) ? donationsData : []);
+      setMyDonations(Array.isArray(contributionsData) ? contributionsData : []);
       setError(null);
     } catch (err: any) {
       setError(err.message);

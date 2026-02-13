@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -52,7 +53,10 @@ export class FamiliesController {
   @Post()
   @Roles('SUPER_ADMIN', 'ASSOCIATION_ADMIN', 'ASSOCIATION_MEMBER')
   @ApiOperation({ summary: 'Create a new family' })
-  async create(@Body() dto: CreateFamilyDto) {
+  async create(@Body() dto: CreateFamilyDto, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.associationId) {
+      dto.associationId = req.user.associationId;
+    }
     return this.familiesService.create(dto);
   }
 

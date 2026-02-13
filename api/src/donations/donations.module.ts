@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { DonationsService } from './donations.service';
 import { DonationsController } from './donations.controller';
-import { FamiliesModule } from '../families/families.module';
-import { RulesModule } from '../rules/rules.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  imports: [FamiliesModule, RulesModule],
+  imports: [PrismaModule],
   controllers: [DonationsController],
   providers: [DonationsService],
   exports: [DonationsService],

@@ -7,16 +7,23 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-// Models - Using String for enum fields (SQLite doesn't support enums)
-// UserRole: SUPER_ADMIN, ASSOCIATION_ADMIN, ASSOCIATION_MEMBER, DONOR
-// AssociationStatus: ACTIVE, PENDING, SUSPENDED
-// BeneficiaryStatus: ELIGIBLE, INELIGIBLE, PENDING_REVIEW
-// FamilyStatus: ELIGIBLE, INELIGIBLE, COOLDOWN
-// DonationStatus: PENDING, APPROVED, REJECTED, COMPLETED
-// DonationType: ONE_TIME, RECURRING
-// PaymentMethod: CARD, BANK_TRANSFER, CASH, CHECK
-// RuleType: FREQUENCY, AMOUNT, ELIGIBILITY
+// =============================================================================
+// SIMPLIFIED CHARITY MANAGEMENT SYSTEM
+// =============================================================================
+// 
+// FLOW:
+// 1. CONTRIBUTIONS (Money IN): Donor (anonymous/authenticated) → Association
+//    - Donor makes contribution → Admin/Member approves → Budget increases
+// 
+// 2. DONATIONS (Aid OUT): Association → Beneficiary
+//    - Staff creates donation using budget → Rules checked → Aid given
+//    - Rules: frequency cooldown, amount limits based on family members
+//
+// 3. PUBLIC TRANSPARENCY: Anyone can view ins/outs without authentication
+//
+// =============================================================================
 
+// UserRole: SUPER_ADMIN, ASSOCIATION_ADMIN, ASSOCIATION_MEMBER, DONOR
 model User {
   id            String   @id @default(cuid())
   email         String   @unique
@@ -28,15 +35,16 @@ model User {
   association   Association? @relation(fields: [associationId], references: [id])
   associationId String?
   
-  donations     Donation[]       @relation("DonorDonations")      // Legacy
-  contributions Contribution[]   @relation("DonorContributions")  // New: donor's contributions
-  dispatches    Dispatch[]       @relation("ProcessedDispatches") // New: dispatches processed by this user
-  activityLogs  ActivityLog[]
+  // Relations
+  contributions   Contribution[] @relation("DonorContributions")
+  processedDonations Donation[]  @relation("ProcessedDonations")
+  activityLogs    ActivityLog[]
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
 
+// AssociationStatus: ACTIVE, PENDING, SUSPENDED
 model Association {
   id          String   @id @default(cuid())
   name        String
@@ -47,15 +55,15 @@ model Association {
   phone       String?
   address     String?
   status      String   @default("PENDING")
-  budget      Float    @default(0)  // Current available budget from contributions
+  budget      Float    @default(0)  // Available budget from approved contributions
   category    String?
   
+  // Relations
   users         User[]
   beneficiaries Beneficiary[]
   families      Family[]
-  donations     Donation[]      // Legacy - for existing data
-  contributions Contribution[]  // Money coming IN from donors
-  dispatches    Dispatch[]      // Aid going OUT to beneficiaries
+  contributions Contribution[]  // Money IN from donors
+  donations     Donation[]      // Aid OUT to beneficiaries
   rules         DonationRule[]
   activityLogs  ActivityLog[]
   
@@ -63,112 +71,56 @@ model Association {
   updatedAt   DateTime @updatedAt
 }
 
+// FamilyStatus: ELIGIBLE, INELIGIBLE, COOLDOWN
 model Family {
-  id            String    @id @default(cuid())
-  name          String
-  memberCount   Int       @default(1)
-  address       String?
-  status        String    @default("ELIGIBLE")
-  totalReceived Float     @default(0)
+  id              String    @id @default(cuid())
+  name            String
+  memberCount     Int       @default(1)
+  address         String?
+  status          String    @default("ELIGIBLE")
+  totalReceived   Float     @default(0)
   lastDonationDate DateTime?
   
-  association   Association  @relation(fields: [associationId], references: [id], onDelete: Cascade)
+  association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
   associationId String
   
   beneficiaries Beneficiary[]
-  donations     Donation[]                  // Legacy
-  dispatches    Dispatch[]  @relation("FamilyDispatches")  // New: aid received by family
+  donations     Donation[]
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
 
+// BeneficiaryStatus: ELIGIBLE, INELIGIBLE, PENDING_REVIEW
 model Beneficiary {
-  id              String    @id @default(cuid())
-  nationalId      String?   @unique  // National ID card number for lookup
-  firstName       String
-  lastName        String
-  email           String?
-  phone           String?
-  address         String?
-  status          String    @default("PENDING_REVIEW")
-  totalReceived   Float     @default(0)
+  id               String    @id @default(cuid())
+  nationalId       String?   @unique  // National ID for lookup (no account needed)
+  firstName        String
+  lastName         String
+  email            String?
+  phone            String?
+  address          String?
+  status           String    @default("PENDING_REVIEW")
+  totalReceived    Float     @default(0)
   lastDonationDate DateTime?
   eligibilityNotes String?
   
   association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
   associationId String
   
-  family        Family      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  family        Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
   familyId      String
   
-  donations     Donation[]                    // Legacy
-  dispatches    Dispatch[]  @relation("BeneficiaryDispatches")  // New: aid received
+  donations     Donation[]
   
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
-model Donation {
-  id          String    @id @default(cuid())
-  amount      Float
-  currency    String    @default("TND")
-  status      String    @default("PENDING")
-  type        String    @default("ONE_TIME")
-  method      String    @default("CASH")
-  notes       String?
-  processedAt DateTime?
-  
-  association   Association  @relation(fields: [associationId], references: [id], onDelete: Cascade)
-  associationId String
-  
-  donor         User?        @relation("DonorDonations", fields: [donorId], references: [id])
-  donorId       String?
-  
-  beneficiary   Beneficiary? @relation(fields: [beneficiaryId], references: [id])
-  beneficiaryId String?
-  
-  family        Family?      @relation(fields: [familyId], references: [id])
-  familyId      String?
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model DonationRule {
-  id          String   @id @default(cuid())
-  name        String
-  description String
-  type        String
-  value       Float
-  unit        String?
-  isActive    Boolean  @default(true)
-  
-  association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
-  associationId String
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model ActivityLog {
-  id         String   @id @default(cuid())
-  action     String
-  details    String
-  entityType String
-  entityId   String
-  
-  association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
-  associationId String
-  
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String
-  
-  createdAt  DateTime @default(now())
-}
-
-// NEW: Contribution - Money coming IN from donors to association's budget
-// ContributionStatus: PENDING, APPROVED, REJECTED, COMPLETED
+// =============================================================================
+// CONTRIBUTION: Money coming IN from donors
+// =============================================================================
+// ContributionStatus: PENDING, APPROVED, REJECTED
 model Contribution {
   id          String    @id @default(cuid())
   amount      Float
@@ -178,14 +130,16 @@ model Contribution {
   method      String    @default("CARD")      // CARD, BANK_TRANSFER, CASH, CHECK
   notes       String?
   approvedAt  DateTime?
+  approvedBy  String?   // User ID who approved
   
   association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
   associationId String
   
+  // Authenticated donor (optional)
   donor       User?     @relation("DonorContributions", fields: [donorId], references: [id])
   donorId     String?
   
-  // For anonymous donors
+  // Anonymous donor info
   donorName   String?
   donorEmail  String?
   
@@ -193,30 +147,70 @@ model Contribution {
   updatedAt   DateTime  @updatedAt
 }
 
-// NEW: Dispatch - Aid going OUT from association to beneficiaries
-// DispatchStatus: PENDING, APPROVED, COMPLETED, CANCELLED
-model Dispatch {
+// =============================================================================
+// DONATION: Aid going OUT to beneficiaries (from budget)
+// =============================================================================
+// DonationStatus: COMPLETED, CANCELLED
+model Donation {
   id          String    @id @default(cuid())
   amount      Float
   currency    String    @default("TND")
-  status      String    @default("PENDING")
+  status      String    @default("COMPLETED")
   aidType     String    @default("CASH")  // CASH, FOOD, CLOTHING, MEDICAL, EDUCATION, OTHER
   notes       String?
-  completedAt DateTime?
   
   association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
   associationId String
   
-  beneficiary   Beneficiary @relation("BeneficiaryDispatches", fields: [beneficiaryId], references: [id])
+  beneficiary   Beneficiary @relation(fields: [beneficiaryId], references: [id])
   beneficiaryId String
   
-  family        Family?     @relation("FamilyDispatches", fields: [familyId], references: [id])
+  family        Family? @relation(fields: [familyId], references: [id])
   familyId      String?
   
-  // Who processed this dispatch
-  processedBy   User?       @relation("ProcessedDispatches", fields: [processedById], references: [id])
+  // Staff member who created this donation
+  processedBy   User?   @relation("ProcessedDonations", fields: [processedById], references: [id])
   processedById String?
   
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// =============================================================================
+// RULES: Association rules for donations
+// =============================================================================
+// RuleType: FREQUENCY (cooldown days), AMOUNT (max per family member), ELIGIBILITY (min members)
+model DonationRule {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  type        String   // FREQUENCY, AMOUNT, ELIGIBILITY
+  value       Float
+  unit        String?  // days, TND, members
+  isActive    Boolean  @default(true)
+  
+  association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
+  associationId String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// =============================================================================
+// ACTIVITY LOG: Full audit trail
+// =============================================================================
+model ActivityLog {
+  id         String   @id @default(cuid())
+  action     String
+  details    String
+  entityType String   // CONTRIBUTION, DONATION, BENEFICIARY, etc.
+  entityId   String
+  
+  association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
+  associationId String
+  
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  
+  createdAt  DateTime @default(now())
 }

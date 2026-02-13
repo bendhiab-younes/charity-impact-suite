@@ -3,6 +3,10 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+/**
+ * Donation = Aid OUT to beneficiaries
+ * This was previously called "Dispatch" - keeping the hook name for backward compatibility
+ */
 export interface Dispatch {
   id: string;
   amount: number;
@@ -14,6 +18,7 @@ export interface Dispatch {
   createdAt: string;
   beneficiary: {
     id: string;
+    nationalId?: string;
     firstName: string;
     lastName: string;
   };
@@ -25,7 +30,7 @@ export interface Dispatch {
     id: string;
     name: string;
   };
-  association: {
+  association?: {
     id: string;
     name: string;
   };
@@ -33,12 +38,16 @@ export interface Dispatch {
 
 export interface EligibleBeneficiary {
   id: string;
+  nationalId?: string;
   firstName: string;
   lastName: string;
   status: string;
   totalReceived: number;
+  lastAidDate?: string;
   lastDonationDate?: string;
-  family: {
+  canReceive?: boolean;
+  cooldownEnds?: string;
+  family?: {
     id: string;
     name: string;
     memberCount: number;
@@ -62,18 +71,18 @@ export function useDispatches() {
 
     try {
       setIsLoading(true);
-      const [dispatchData, statsData, eligibleData] = await Promise.all([
-        api.getDispatches(user.associationId),
-        api.getDispatchStats(user.associationId),
-        api.getEligibleBeneficiaries(user.associationId),
+      const [donationData, statsData, eligibleData] = await Promise.all([
+        api.getDonations(user.associationId),
+        api.getDonationStats().catch(() => ({ budget: 0, totalAmount: 0, totalCount: 0 })),
+        api.getEligibleBeneficiaries().catch(() => []),
       ]);
-      setDispatches(Array.isArray(dispatchData) ? dispatchData : []);
+      setDispatches(Array.isArray(donationData) ? donationData : []);
       setBudget(statsData?.budget || 0);
       setEligibleBeneficiaries(Array.isArray(eligibleData) ? eligibleData : []);
       setError(null);
     } catch (err: any) {
       setError(err.message);
-      toast.error('Failed to load dispatch data');
+      toast.error('Failed to load donations data');
     } finally {
       setIsLoading(false);
     }
@@ -96,16 +105,32 @@ export function useDispatches() {
     }
 
     try {
-      const dispatch = await api.createDispatch({
+      const donation = await api.createDonation({
         ...data,
         associationId: user.associationId,
       });
-      setDispatches(prev => [dispatch, ...prev]);
+      setDispatches(prev => [donation, ...prev]);
       setBudget(prev => prev - data.amount);
       toast.success('Aid dispatched successfully');
-      return dispatch;
+      return donation;
     } catch (err: any) {
       toast.error(err.message || 'Failed to dispatch aid');
+      throw err;
+    }
+  };
+
+  const cancelDispatch = async (id: string) => {
+    try {
+      const result = await api.cancelDonation(id);
+      setDispatches(prev => 
+        prev.map(d => d.id === id ? { ...d, status: 'CANCELLED' } : d)
+      );
+      // Refetch to get updated budget
+      fetchDispatches();
+      toast.success('Donation cancelled and budget restored');
+      return result;
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to cancel donation');
       throw err;
     }
   };
@@ -113,11 +138,13 @@ export function useDispatches() {
   const pendingCount = dispatches.filter(d => d.status === 'PENDING').length;
   const completedCount = dispatches.filter(d => d.status === 'COMPLETED').length;
   const totalDispatched = dispatches
-    .filter(d => d.status === 'COMPLETED' || d.status === 'APPROVED')
+    .filter(d => d.status === 'COMPLETED')
     .reduce((sum, d) => sum + d.amount, 0);
 
   return {
     dispatches,
+    // Alias for new naming
+    donations: dispatches,
     eligibleBeneficiaries,
     budget,
     isLoading,
@@ -126,6 +153,10 @@ export function useDispatches() {
     completedCount,
     totalDispatched,
     createDispatch,
+    // Alias for new naming
+    createDonation: createDispatch,
+    cancelDispatch,
+    cancelDonation: cancelDispatch,
     refetch: fetchDispatches,
   };
 }
