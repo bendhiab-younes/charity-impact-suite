@@ -43,7 +43,308 @@ This platform addresses all of these challenges with a modern, easy-to-use inter
 
 ---
 
-## 🛠️ Tech Stack
+## � System Diagrams
+
+### Use Case Diagram
+
+The following diagram illustrates the key actors and their interactions with the system:
+
+```mermaid
+graph TB
+    subgraph Actors
+        Donor[👤 Donor]
+        Member[👤 Association Member]
+        Admin[👤 Association Admin]
+        SuperAdmin[👤 Super Admin]
+        Guest[👤 Guest/Public]
+    end
+
+    subgraph "Authentication"
+        Login[Login]
+        Register[Register]
+        ViewProfile[View Profile]
+    end
+
+    subgraph "Donation Management"
+        MakeDonation[Make Donation]
+        ViewDonationHistory[View Donation History]
+        ApproveDonation[Approve/Reject Contribution]
+        DispatchDonation[Dispatch Donation to Beneficiary]
+        TrackImpact[Track Donation Impact]
+    end
+
+    subgraph "Beneficiary Management"
+        AddBeneficiary[Add Beneficiary]
+        UpdateBeneficiary[Update Beneficiary]
+        ViewBeneficiaries[View Beneficiaries]
+        ManageEligibility[Manage Eligibility Status]
+    end
+
+    subgraph "Family Management"
+        AddFamily[Add Family]
+        UpdateFamily[Update Family]
+        ViewFamilies[View Families]
+        CheckCooldown[Check Donation Cooldown]
+    end
+
+    subgraph "Association Management"
+        ViewAssociations[Browse Associations]
+        ViewAssociationDetails[View Association Details]
+        ManageAssociation[Manage Association Data]
+        ViewStats[View Association Statistics]
+    end
+
+    subgraph "Rules Management"
+        ConfigureRules[Configure Distribution Rules]
+        ToggleRules[Enable/Disable Rules]
+        ViewRules[View Active Rules]
+    end
+
+    subgraph "User Management"
+        ManageUsers[Manage Users & Roles]
+        ViewMembers[View Team Members]
+    end
+
+    subgraph "Reporting"
+        ViewDashboard[View Dashboard]
+        ExportData[Export Data to CSV]
+        ViewReports[View Reports]
+    end
+
+    Guest --> ViewAssociations
+    Guest --> ViewAssociationDetails
+    Guest --> Register
+
+    Donor --> Login
+    Donor --> ViewProfile
+    Donor --> MakeDonation
+    Donor --> ViewDonationHistory
+    Donor --> TrackImpact
+    Donor --> ViewAssociations
+
+    Member --> Login
+    Member --> ViewProfile
+    Member --> AddBeneficiary
+    Member --> UpdateBeneficiary
+    Member --> ViewBeneficiaries
+    Member --> AddFamily
+    Member --> UpdateFamily
+    Member --> ViewFamilies
+    Member --> DispatchDonation
+    Member --> CheckCooldown
+    Member --> ViewDashboard
+    Member --> ViewReports
+    Member --> ViewMembers
+
+    Admin --> Login
+    Admin --> ViewProfile
+    Admin --> ApproveDonation
+    Admin --> AddBeneficiary
+    Admin --> UpdateBeneficiary
+    Admin --> ViewBeneficiaries
+    Admin --> ManageEligibility
+    Admin --> AddFamily
+    Admin --> UpdateFamily
+    Admin --> ViewFamilies
+    Admin --> DispatchDonation
+    Admin --> CheckCooldown
+    Admin --> ManageAssociation
+    Admin --> ViewStats
+    Admin --> ConfigureRules
+    Admin --> ToggleRules
+    Admin --> ViewRules
+    Admin --> ManageUsers
+    Admin --> ViewMembers
+    Admin --> ViewDashboard
+    Admin --> ExportData
+    Admin --> ViewReports
+
+    SuperAdmin --> Login
+    SuperAdmin --> ViewProfile
+    SuperAdmin --> ViewAssociations
+    SuperAdmin --> ManageAssociation
+    SuperAdmin --> ManageUsers
+    SuperAdmin --> ViewStats
+    SuperAdmin --> ViewDashboard
+    SuperAdmin --> ExportData
+    SuperAdmin --> ApproveDonation
+    SuperAdmin --> AddBeneficiary
+    SuperAdmin --> ViewBeneficiaries
+    SuperAdmin --> ManageEligibility
+```
+
+### Class Diagram
+
+The following diagram shows the core domain entities and their relationships:
+
+```mermaid
+classDiagram
+    class User {
+        +String id
+        +String email
+        +String password
+        +String name
+        +Role role
+        +String associationId
+        +DateTime createdAt
+        +DateTime updatedAt
+        +login()
+        +register()
+        +updateProfile()
+    }
+
+    class Association {
+        +String id
+        +String name
+        +String description
+        +String email
+        +String phone
+        +String address
+        +Decimal budget
+        +DateTime createdAt
+        +DateTime updatedAt
+        +addMember()
+        +updateBudget()
+        +getStatistics()
+    }
+
+    class Beneficiary {
+        +String id
+        +String cin
+        +String firstName
+        +String lastName
+        +DateTime dateOfBirth
+        +String address
+        +String phone
+        +EligibilityStatus status
+        +String familyId
+        +String associationId
+        +DateTime createdAt
+        +DateTime updatedAt
+        +checkEligibility()
+        +updateStatus()
+    }
+
+    class Family {
+        +String id
+        +String name
+        +Int size
+        +Decimal monthlyIncome
+        +String address
+        +DateTime lastDonationDate
+        +String associationId
+        +DateTime createdAt
+        +DateTime updatedAt
+        +checkCooldown()
+        +updateLastDonation()
+    }
+
+    class Contribution {
+        +String id
+        +Decimal amount
+        +ContributionStatus status
+        +String donorId
+        +String associationId
+        +DateTime createdAt
+        +DateTime updatedAt
+        +approve()
+        +reject()
+    }
+
+    class Donation {
+        +String id
+        +Decimal amount
+        +DonationStatus status
+        +String beneficiaryId
+        +String familyId
+        +String associationId
+        +String dispatchedBy
+        +DateTime createdAt
+        +DateTime updatedAt
+        +dispatch()
+        +complete()
+        +cancel()
+    }
+
+    class DonationRule {
+        +String id
+        +RuleType type
+        +String name
+        +String description
+        +Json conditions
+        +Boolean isActive
+        +String associationId
+        +DateTime createdAt
+        +DateTime updatedAt
+        +validate()
+        +toggle()
+    }
+
+    class Role {
+        <<enumeration>>
+        SUPER_ADMIN
+        ASSOCIATION_ADMIN
+        ASSOCIATION_MEMBER
+        DONOR
+    }
+
+    class EligibilityStatus {
+        <<enumeration>>
+        ELIGIBLE
+        INELIGIBLE
+        PENDING
+    }
+
+    class ContributionStatus {
+        <<enumeration>>
+        PENDING
+        APPROVED
+        REJECTED
+    }
+
+    class DonationStatus {
+        <<enumeration>>
+        COMPLETED
+        CANCELLED
+    }
+
+    class RuleType {
+        <<enumeration>>
+        FREQUENCY
+        AMOUNT
+        ELIGIBILITY
+    }
+
+    User "1" --> "0..1" Association : belongs to
+    User "1" --> "*" Contribution : makes
+    User "1" --> "*" Donation : dispatches
+
+    Association "1" --> "*" User : has members
+    Association "1" --> "*" Beneficiary : manages
+    Association "1" --> "*" Family : manages
+    Association "1" --> "*" Contribution : receives
+    Association "1" --> "*" Donation : distributes
+    Association "1" --> "*" DonationRule : enforces
+
+    Family "1" --> "*" Beneficiary : contains
+    Family "1" --> "*" Donation : receives
+
+    Beneficiary "1" --> "*" Donation : receives
+    Beneficiary "1" --> "1" Family : belongs to
+
+    Donation "1" --> "1" Beneficiary : assigned to
+    Donation "1" --> "1" Family : assigned to
+
+    User ..> Role : has
+    Beneficiary ..> EligibilityStatus : has
+    Contribution ..> ContributionStatus : has
+    Donation ..> DonationStatus : has
+    DonationRule ..> RuleType : has
+```
+
+---
+
+## �🛠️ Tech Stack
 
 ### Frontend
 | Technology | Why We Chose It |
