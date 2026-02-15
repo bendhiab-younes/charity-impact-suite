@@ -189,7 +189,7 @@ export function AddBeneficiaryModal({ open, onOpenChange, onSuccess }: AddBenefi
               </SelectTrigger>
               <SelectContent>
                 {families.length === 0 ? (
-                  <SelectItem value="" disabled>No families - create one first</SelectItem>
+                  <SelectItem value="_none" disabled>No families - create one first</SelectItem>
                 ) : (
                   families.map((f) => (
                     <SelectItem key={f.id} value={f.id}>

@@ -541,8 +541,18 @@ function AssociationDonationsPage() {
 
 // Main Donations Page - Routes based on user role
 export default function DonationsPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const userRole = user?.role?.toUpperCase();
+
+  if (authLoading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8 flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
   
   // Donors see their own donations page
   if (userRole === 'DONOR') {

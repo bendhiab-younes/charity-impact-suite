@@ -31,7 +31,7 @@ interface EligibleBeneficiary {
 
 const NewDispatch = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [eligibleBeneficiaries, setEligibleBeneficiaries] = useState<EligibleBeneficiary[]>([]);
   const [budget, setBudget] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +46,10 @@ const NewDispatch = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      if (!user?.associationId) return;
+      if (!user?.associationId) {
+        setIsLoading(false);
+        return;
+      }
       setIsLoading(true);
       try {
         const [eligibleData, statsData] = await Promise.all([
@@ -114,11 +117,44 @@ const NewDispatch = () => {
     }
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <DashboardLayout>
         <div className="p-6 lg:p-8 flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8 flex items-center justify-center h-64">
+          <p className="text-muted-foreground">Please log in to dispatch aid.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!user.associationId) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8">
+          <div className="mb-8">
+            <Link to="/dashboard/donations" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back to Funds Management
+            </Link>
+            <h1 className="text-2xl font-bold text-foreground">Dispatch Aid</h1>
+          </div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>No Association Linked</AlertTitle>
+            <AlertDescription>
+              Your account is not linked to any association. Only association members can dispatch aid.
+            </AlertDescription>
+          </Alert>
         </div>
       </DashboardLayout>
     );
@@ -184,7 +220,7 @@ const NewDispatch = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {eligibleBeneficiaries.length === 0 ? (
-                        <SelectItem value="" disabled>No eligible beneficiaries</SelectItem>
+                        <SelectItem value="_none" disabled>No eligible beneficiaries</SelectItem>
                       ) : (
                         eligibleBeneficiaries.map((b) => (
                           <SelectItem key={b.id} value={b.id}>

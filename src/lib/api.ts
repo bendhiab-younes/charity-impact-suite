@@ -175,9 +175,9 @@ class ApiClient {
   // Donations (Aid OUT to beneficiaries) - formerly "Dispatches"
   async getDonations(associationId: string, status?: string) {
     const params = new URLSearchParams();
+    params.append('associationId', associationId);
     if (status) params.append('status', status);
-    const query = params.toString() ? `?${params.toString()}` : '';
-    return this.request<any[]>(`/donations${query}`);
+    return this.request<any[]>(`/donations?${params.toString()}`);
   }
 
   async getDonation(id: string) {

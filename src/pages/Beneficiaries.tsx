@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 
 export default function BeneficiariesPage() {
   const { beneficiaries, isLoading, eligibleCount, pendingCount, refetch, updateStatus } = useBeneficiaries();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState<string | null>(null);
@@ -38,11 +38,24 @@ export default function BeneficiariesPage() {
   const userRole = user?.role?.toUpperCase();
   const canEdit = userRole === 'ASSOCIATION_ADMIN' || userRole === 'SUPER_ADMIN';
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <DashboardLayout>
         <div className="p-6 lg:p-8 flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8 flex flex-col items-center justify-center h-64 gap-4">
+          <p className="text-muted-foreground">Please log in to view beneficiaries.</p>
+          <Button variant="hero" asChild>
+            <a href="/auth">Go to Login</a>
+          </Button>
         </div>
       </DashboardLayout>
     );
