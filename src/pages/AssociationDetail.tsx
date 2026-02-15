@@ -33,26 +33,22 @@ export default function AssociationDetailPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [association, setAssociation] = useState<any>(null);
-  const [donations, setDonations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
 
-  // Calculate stats from real data
+  // Calculate stats from enriched association data
   const stats = {
-    totalDonations: donations.reduce((sum, d) => sum + (d.amount || 0), 0),
-    totalBeneficiaries: association?._count?.beneficiaries || 0,
-    totalFamilies: association?._count?.families || 0,
-    totalDonationCount: donations.length,
-    completedDonations: donations.filter(d => d.status === 'COMPLETED').length,
-    successRate: donations.length > 0 
-      ? Math.round((donations.filter(d => d.status === 'COMPLETED').length / donations.length) * 100)
-      : 0,
-    averageDonation: donations.length > 0
-      ? Math.round(donations.reduce((sum, d) => sum + (d.amount || 0), 0) / donations.length)
-      : 0,
-    donationsThisMonth: donations
-      .filter(d => new Date(d.createdAt).getMonth() === new Date().getMonth())
-      .reduce((sum, d) => sum + (d.amount || 0), 0),
+    totalRaised: association?.totalRaised || 0,
+    totalDistributed: association?.totalDistributed || 0,
+    totalBeneficiaries: association?.totalBeneficiaries || 0,
+    totalFamilies: association?.totalFamilies || 0,
+    successRate: association?.successRate || 0,
+    distributedThisMonth: association?.distributedThisMonth || 0,
+    averageDonation: (() => {
+      const totalDonations = association?.totalDonations || 0;
+      const totalDistributed = association?.totalDistributed || 0;
+      return totalDonations > 0 ? Math.round(totalDistributed / totalDonations) : 0;
+    })(),
   };
 
   useEffect(() => {
@@ -61,15 +57,6 @@ export default function AssociationDetailPage() {
       try {
         const data = await api.getAssociation(id);
         setAssociation(data);
-        
-        // Load donations for this association
-        try {
-          const donationsData = await api.getDonations(id);
-          setDonations(Array.isArray(donationsData) ? donationsData : []);
-        } catch (err) {
-          console.warn('Could not load donations', err);
-          setDonations([]);
-        }
       } catch (err) {
         console.error('Failed to load association', err);
       } finally {
@@ -240,9 +227,9 @@ export default function AssociationDetailPage() {
               <Card className="text-center p-6">
                 <Wallet className="h-5 w-5 text-primary mx-auto mb-2" />
                 <p className="text-2xl font-bold">
-                  {stats.totalDonations >= 1000 
-                    ? `${(stats.totalDonations / 1000).toFixed(0)}k` 
-                    : stats.totalDonations} TND
+                  {stats.totalRaised >= 1000 
+                    ? `${(stats.totalRaised / 1000).toFixed(0)}k` 
+                    : stats.totalRaised} TND
                 </p>
                 <p className="text-sm text-muted-foreground">Total Raised</p>
               </Card>
@@ -341,11 +328,11 @@ export default function AssociationDetailPage() {
                       <div>
                         <div className="flex justify-between text-sm mb-2">
                           <span>Monthly Goal: 25,000 TND</span>
-                          <span className="font-medium">{Math.min(100, ((stats.donationsThisMonth / 25000) * 100)).toFixed(0)}%</span>
+                          <span className="font-medium">{Math.min(100, ((stats.distributedThisMonth / 25000) * 100)).toFixed(0)}%</span>
                         </div>
-                        <Progress value={Math.min(100, (stats.donationsThisMonth / 25000) * 100)} className="h-2" />
+                        <Progress value={Math.min(100, (stats.distributedThisMonth / 25000) * 100)} className="h-2" />
                         <p className="text-sm text-muted-foreground mt-2">
-                          {stats.donationsThisMonth.toLocaleString()} TND raised this month
+                          {stats.distributedThisMonth.toLocaleString()} TND distributed this month
                         </p>
                       </div>
                     </CardContent>
@@ -387,8 +374,8 @@ export default function AssociationDetailPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {donations.length > 0 ? donations.slice(0, 5).map((donation: any) => (
-                        <div key={donation.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
+                      {(association?.recentDonations?.length > 0) ? association.recentDonations.map((donation: any, index: number) => (
+                        <div key={index} className="flex items-center justify-between py-3 border-b border-border last:border-0">
                           <div className="flex items-center gap-3">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent">
                               <Heart className="h-4 w-4 text-accent-foreground" />
@@ -459,10 +446,10 @@ export default function AssociationDetailPage() {
         associationId={id || ''}
         associationName={association?.name || 'Association'}
         onSuccess={() => {
-          // Refresh donations list
+          // Refresh association data to reflect new contribution
           if (id) {
-            api.getDonations(id).then(data => {
-              setDonations(Array.isArray(data) ? data : []);
+            api.getAssociation(id).then(data => {
+              setAssociation(data);
             }).catch(console.error);
           }
         }}

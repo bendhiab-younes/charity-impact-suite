@@ -27,6 +27,12 @@ export class AssociationsController {
     return this.associationsService.findAll();
   }
 
+  @Get('public-stats')
+  @ApiOperation({ summary: 'Get aggregated platform statistics (public)' })
+  async getPublicStats() {
+    return this.associationsService.getPublicStats();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get association by ID (public)' })
   async findOne(@Param('id') id: string) {

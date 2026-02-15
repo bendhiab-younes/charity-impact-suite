@@ -18,10 +18,10 @@ export function AssociationCard({ association, showActions = true }: Association
     suspended: 'destructive',
   } as const;
   
-  const totalDonations = association.totalDonations || association.donations?.length || 0;
+  const totalRaised = association.totalRaised || 0;
   const totalBeneficiaries = association.totalBeneficiaries || association.beneficiaries?.length || 0;
-  const totalMembers = association.totalMembers || association.users?.length || 0;
-  const successRate = association.impactMetrics?.successRate || 95;
+  const totalFamilies = association.totalFamilies || 0;
+  const successRate = association.successRate ?? 0;
 
   return (
     <Card variant="interactive" className="overflow-hidden">
@@ -52,7 +52,7 @@ export function AssociationCard({ association, showActions = true }: Association
               <Wallet className="h-3.5 w-3.5" />
             </div>
             <p className="text-lg font-semibold">
-              ${totalDonations > 1000 ? (totalDonations / 1000).toFixed(0) + 'k' : totalDonations}
+              {totalRaised > 1000 ? (totalRaised / 1000).toFixed(0) + 'k' : totalRaised} TND
             </p>
             <p className="text-xs text-muted-foreground">Raised</p>
           </div>
@@ -70,9 +70,9 @@ export function AssociationCard({ association, showActions = true }: Association
               <Users className="h-3.5 w-3.5" />
             </div>
             <p className="text-lg font-semibold">
-              {totalMembers}
+              {totalFamilies}
             </p>
-            <p className="text-xs text-muted-foreground">Members</p>
+            <p className="text-xs text-muted-foreground">Families</p>
           </div>
         </div>
         

@@ -76,14 +76,14 @@ const Index = () => {
                   <Skeleton className="h-10 w-20 mx-auto mb-2" />
                 ) : (
                   <p className="text-3xl md:text-4xl font-bold text-primary">
-                    {stats.totalDonations >= 1000000 
-                      ? `${(stats.totalDonations / 1000000).toFixed(1)}M` 
-                      : stats.totalDonations >= 1000
-                      ? `${(stats.totalDonations / 1000).toFixed(0)}k`
-                      : stats.totalDonations.toLocaleString()} TND
+                    {stats.totalRaised >= 1000000 
+                      ? `${(stats.totalRaised / 1000000).toFixed(1)}M` 
+                      : stats.totalRaised >= 1000
+                      ? `${(stats.totalRaised / 1000).toFixed(0)}k`
+                      : stats.totalRaised.toLocaleString()} TND
                   </p>
                 )}
-                <p className="text-sm text-muted-foreground mt-1">Total Donations</p>
+                <p className="text-sm text-muted-foreground mt-1">Total Raised</p>
               </Card>
               <Card className="text-center p-6">
                 {isLoadingStats ? (

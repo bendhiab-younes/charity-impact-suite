@@ -78,6 +78,10 @@ class ApiClient {
     return this.request<any>(`/associations/${id}`);
   }
 
+  async getPublicStats() {
+    return this.request<any>('/associations/public-stats');
+  }
+
   async createAssociation(data: any) {
     return this.request<any>('/associations', { method: 'POST', body: data });
   }
