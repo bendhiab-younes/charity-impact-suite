@@ -99,7 +99,7 @@ export class ContributionsService {
       this.prisma.contribution.update({
         where: { id },
         data: {
-          status: 'COMPLETED',
+          status: 'APPROVED',
           approvedAt: new Date(),
         },
       }),
@@ -139,7 +139,7 @@ export class ContributionsService {
    * Get total contributions stats for an association
    */
   async getStats(associationId: string) {
-    const [total, pending, completed] = await Promise.all([
+    const [total, pending, approved] = await Promise.all([
       this.prisma.contribution.aggregate({
         where: { associationId },
         _sum: { amount: true },
@@ -151,7 +151,7 @@ export class ContributionsService {
         _count: true,
       }),
       this.prisma.contribution.aggregate({
-        where: { associationId, status: 'COMPLETED' },
+        where: { associationId, status: 'APPROVED' },
         _sum: { amount: true },
         _count: true,
       }),
@@ -166,9 +166,9 @@ export class ContributionsService {
         amount: pending._sum.amount || 0,
         count: pending._count,
       },
-      completed: {
-        amount: completed._sum.amount || 0,
-        count: completed._count,
+      approved: {
+        amount: approved._sum.amount || 0,
+        count: approved._count,
       },
     };
   }

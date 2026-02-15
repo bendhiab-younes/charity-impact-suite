@@ -289,13 +289,25 @@ function DonorContributionsTable({ contributions }: { contributions: any[] }) {
 // Association Staff Donations Page Component
 function AssociationDonationsPage() {
   const { user } = useAuth();
-  const { contributions, isLoading: contributionsLoading, pendingCount: pendingContributions, approvedCount, approveContribution, rejectContribution, totalAmount } = useContributions();
-  const { dispatches, isLoading: dispatchesLoading, budget, pendingCount: pendingDispatches, completedCount: completedDispatches, totalDispatched } = useDispatches();
+  const { contributions, isLoading: contributionsLoading, pendingCount: pendingContributions, approvedCount, approveContribution, rejectContribution, totalAmount, refetch: refetchContributions } = useContributions();
+  const { dispatches, isLoading: dispatchesLoading, budget, pendingCount: pendingDispatches, completedCount: completedDispatches, totalDispatched, refetch: refetchDispatches } = useDispatches();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('contributions');
 
   const userRole = user?.role?.toUpperCase();
   const canApprove = userRole === 'ASSOCIATION_ADMIN' || userRole === 'SUPER_ADMIN';
+
+  // Wrapper to approve and refresh budget
+  const handleApprove = async (id: string) => {
+    await approveContribution(id);
+    // Refetch both to ensure budget is in sync
+    refetchDispatches();
+  };
+
+  // Wrapper to reject
+  const handleReject = async (id: string) => {
+    await rejectContribution(id);
+  };
   
   const filteredContributions = contributions.filter(c => {
     if (searchQuery) {
@@ -452,8 +464,8 @@ function AssociationDonationsPage() {
                   <CardContent className="p-0">
                     <ContributionsTable 
                       contributions={filteredContributions}
-                      onApprove={canApprove ? approveContribution : undefined}
-                      onReject={canApprove ? rejectContribution : undefined}
+                      onApprove={canApprove ? handleApprove : undefined}
+                      onReject={canApprove ? handleReject : undefined}
                     />
                   </CardContent>
                 </Card>
@@ -464,8 +476,8 @@ function AssociationDonationsPage() {
                   <CardContent className="p-0">
                     <ContributionsTable 
                       contributions={filteredContributions.filter(c => c.status === 'PENDING')}
-                      onApprove={canApprove ? approveContribution : undefined}
-                      onReject={canApprove ? rejectContribution : undefined}
+                      onApprove={canApprove ? handleApprove : undefined}
+                      onReject={canApprove ? handleReject : undefined}
                     />
                   </CardContent>
                 </Card>

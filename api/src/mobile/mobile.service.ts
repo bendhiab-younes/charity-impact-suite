@@ -53,7 +53,7 @@ export class MobileService {
     }
 
     const contributions = await this.prisma.contribution.findMany({
-      where: { associationId: id, status: 'COMPLETED' },
+      where: { associationId: id, status: 'APPROVED' },
       select: { amount: true },
     });
 
@@ -185,7 +185,7 @@ export class MobileService {
         this.prisma.contribution.update({
           where: { id: data.contributionId },
           data: {
-            status: 'COMPLETED',
+            status: 'APPROVED',
             approvedAt: new Date(),
             notes: contribution.notes 
               ? `${contribution.notes}\nApproved by user ${data.approvedById}`
@@ -202,7 +202,7 @@ export class MobileService {
 
       return {
         id: updatedContribution.id,
-        status: 'COMPLETED',
+        status: 'APPROVED',
         amount: updatedContribution.amount,
         message: 'Contribution approved and added to budget',
       };
@@ -559,7 +559,7 @@ export class MobileService {
         _count: true,
       }),
       this.prisma.contribution.aggregate({
-        where: { associationId, status: 'COMPLETED' },
+        where: { associationId, status: 'APPROVED' },
         _sum: { amount: true },
         _count: true,
       }),
